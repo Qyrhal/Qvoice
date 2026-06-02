@@ -1,0 +1,198 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: rgba(16, 16, 20, 0.45);
+  color: rgba(255,255,255,0.85);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Titlebar ────────────────────────────────────────────── */
+.titlebar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: drag;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.01em;
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  padding-left: 72px;
+}
+
+/* ── Scrollable content ──────────────────────────────────── */
+.content {
+  overflow-y: auto;
+  height: calc(100vh - 52px);
+  padding: 24px 24px 32px;
+}
+
+.content::-webkit-scrollbar { width: 5px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+/* ── Section ────────────────────────────────────────────── */
+.section { margin-bottom: 24px; }
+
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 8px;
+  padding-left: 2px;
+}
+
+/* ── Glass card ─────────────────────────────────────────── */
+.glass-card {
+  position: relative;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.glass-card-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Row ────────────────────────────────────────────────── */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  gap: 16px;
+}
+
+.row + .row { border-top: 0.5px solid rgba(255,255,255,0.05); }
+
+.label {
+  font-size: 13.5px;
+  color: rgba(255,255,255,0.82);
+  flex: 1;
+  min-width: 0;
+}
+
+.label-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.32);
+  margin-top: 2px;
+}
+
+/* ── Inputs ─────────────────────────────────────────────── */
+select, input[type="text"], input[type="number"] {
+  background: rgba(255,255,255,0.07);
+  border: 0.5px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.8);
+  font-size: 12.5px;
+  font-family: inherit;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+  flex-shrink: 0;
+}
+
+select { width: 170px; cursor: pointer; }
+input[type="text"] { width: 200px; }
+input[type="number"] { width: 64px; text-align: center; }
+
+select:focus, input:focus { border-color: rgba(48,209,88,0.5); }
+select option { background: #1e1e20; }
+
+/* ── Textarea ───────────────────────────────────────────── */
+textarea {
+  width: 100%;
+  min-height: 86px;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.72);
+  font-size: 12.5px;
+  font-family: inherit;
+  line-height: 1.55;
+  padding: 12px 14px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+textarea:focus { border-color: rgba(48,209,88,0.4); }
+
+/* ── Toggle ─────────────────────────────────────────────── */
+.toggle {
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: rgba(255,255,255,0.12);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.toggle.on { background: #30d158; }
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s cubic-bezier(0.34,1.4,0.64,1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.toggle.on::after { transform: translateX(18px); }
+
+/* ── Note ───────────────────────────────────────────────── */
+.note {
+  font-size: 11px;
+  color: rgba(255,255,255,0.22);
+  margin-top: 7px;
+  padding-left: 2px;
+}
+
+/* ── Save button ────────────────────────────────────────── */
+.btn-save {
+  width: 100%;
+  padding: 12px;
+  background: #30d158;
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: opacity 0.15s, background 0.25s, color 0.25s;
+  margin-top: 4px;
+}
+
+.btn-save:hover  { opacity: 0.85; }
+.btn-save:active { opacity: 0.65; }
+
+.btn-save.saved {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.4);
+  cursor: default;
+}

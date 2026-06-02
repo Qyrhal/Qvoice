@@ -7,6 +7,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: 'renderer/index.html',
+        settings: 'renderer/settings.html',
+      },
+    },
   },
   plugins: [react()],
 })

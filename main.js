@@ -424,13 +424,15 @@ function openSettingsWindow() {
     maximizable: false,
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 16, y: 16 },
-    backgroundColor: '#111113',
+    transparent: true,
+    vibrancy: 'sidebar',
+    visualEffectState: 'active',
     webPreferences: {
       preload: path.join(__dirname, 'preload-settings.js'),
       contextIsolation: true,
     }
   })
-  settingsWin.loadFile('renderer/settings.html')
+  settingsWin.loadFile(path.join(__dirname, 'renderer', 'dist', 'settings.html'))
   settingsWin.on('closed', () => { settingsWin = null })
 }
 
