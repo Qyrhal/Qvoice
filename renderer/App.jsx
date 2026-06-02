@@ -4,11 +4,12 @@ import './App.css'
 
 // ─── State machine ─────────────────────────────────────────────
 const PHASES = {
-  idle:        { label: null,      dot: '' },
+  idle:        { label: null,             dot: '' },
   loading:     { label: 'Loading model',  dot: 'dot-idle' },
   recording:   { label: 'Recording',      dot: 'dot-record' },
   transcribing:{ label: 'Transcribing',   dot: 'dot-process' },
   correcting:  { label: 'Correcting',     dot: 'dot-correct' },
+  preview:     { label: 'Ready',          dot: 'dot-done' },
   result:      { label: 'Pasted',         dot: 'dot-done' },
 }
 
@@ -181,7 +182,7 @@ function StatusRow({ phase }) {
 }
 
 // ─── State Content ─────────────────────────────────────────────
-function StateContent({ state, analyser, resultText, liveText }) {
+function StateContent({ state, analyser, resultText, liveText, onPaste, onDismiss }) {
   switch (state) {
     case 'loading':
       return <LoadingDots />
@@ -196,6 +197,16 @@ function StateContent({ state, analyser, resultText, liveText }) {
       return <LoadingDots />
     case 'correcting':
       return <div className="result-text">{resultText}</div>
+    case 'preview':
+      return (
+        <>
+          <div className="result-text">{resultText}</div>
+          <div className="preview-actions">
+            <button className="preview-btn preview-btn-dismiss" onClick={onDismiss}>Dismiss</button>
+            <button className="preview-btn preview-btn-paste" onClick={onPaste}>Paste</button>
+          </div>
+        </>
+      )
     case 'result':
       return <div className="result-text">{resultText}</div>
     default:
@@ -273,6 +284,7 @@ export function App() {
   const overlayRef = useRef(null)
   const partialTimerRef = useRef(null)
   const partialInFlightRef = useRef(false)
+  const autoPasteRef = useRef(true)
   stateRef.current = state
 
   function showPanel() {
@@ -313,6 +325,12 @@ export function App() {
   // IPC listeners
   useEffect(() => {
     const qv = window.qvoice
+
+    qv.onSettingsUpdate((s) => {
+      if (s.autoPaste !== undefined) autoPasteRef.current = s.autoPaste
+    })
+
+    qv.onPreviewConfirmed(() => hidePanel())
 
     qv.onServerReady(() => {
       if (stateRef.current === 'loading') hidePanel()
@@ -369,13 +387,19 @@ export function App() {
         return
       }
 
-      setResultText(result.text.trim())
+      const text = result.text.trim()
+      setResultText(text)
       setLiveText('')
-      setState('result')
-      setTimeout(() => {
-        setAnimating(false)
-        qv.resultReady(result.text.trim())
-      }, 180)
+      if (autoPasteRef.current) {
+        setState('result')
+        setTimeout(() => {
+          setAnimating(false)
+          qv.resultReady(text)
+        }, 180)
+      } else {
+        setState('preview')
+        qv.previewReady(text)
+      }
     })
 
     qv.onTranscriptionProgress((data) => {
@@ -410,6 +434,8 @@ export function App() {
           analyser={analyser}
           resultText={resultText}
           liveText={liveText}
+          onPaste={() => window.qvoice.confirmPaste(resultText)}
+          onDismiss={hidePanel}
         />
       </div>
     </div>

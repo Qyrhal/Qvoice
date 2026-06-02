@@ -258,6 +258,7 @@ function doPaste(text) {
   isPreviewing = false
   previewText = ''
   clipboard.writeText(text)
+  win?.webContents.send('preview-confirmed')
   win.hide()
   win.setSize(520, 110)
 

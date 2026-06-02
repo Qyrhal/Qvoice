@@ -159,6 +159,38 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Preview actions ─────────────────────────────────────────── */
+.preview-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  -webkit-app-region: no-drag;
+}
+
+.preview-btn {
+  flex: 1;
+  padding: 7px 0;
+  border-radius: 8px;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.preview-btn:active { opacity: 0.65; }
+
+.preview-btn-dismiss {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.5);
+}
+
+.preview-btn-paste {
+  background: #30d158;
+  color: #000;
+}
+
 /* ── Result ──────────────────────────────────────────────────── */
 .result-text {
   margin-top: 12px;
