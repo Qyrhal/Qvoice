@@ -34,8 +34,8 @@ const serverEvents = new EventEmitter()
 // ─── Settings ─────────────────────────────────────────────────
 const DEFAULT_SETTINGS = {
   whisperModel: 'base.en',
-  llmRepo: 'Qwen/Qwen2.5-0.5B-Instruct-GGUF',
-  llmFile: 'qwen2.5-0.5b-instruct-q4_k_m.gguf',
+  llmRepo: 'LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit',
+  llmFile: '',
   systemPrompt: 'You are a speech transcription corrector. Fix grammar, punctuation, and misheard words in the user\'s text. Return ONLY the corrected text — no explanation, no quotes, nothing else.',
   autoPaste: false,
   correctionEnabled: true,

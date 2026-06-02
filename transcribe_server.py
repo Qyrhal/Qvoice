@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
 Qvoice transcription server.
-Pipeline: Whisper (speech-to-text) → Qwen2.5-0.5B (correction) → stdout
+Pipeline: Whisper (speech-to-text) → LFM2.5-1.2B (correction) → stdout
 """
 import sys
 import json
 import os
 
 WHISPER_MODEL  = os.environ.get("QVOICE_MODEL", "base.en")
-LLM_REPO       = os.environ.get("QVOICE_LLM_REPO", "Qwen/Qwen2.5-0.5B-Instruct-GGUF")
-LLM_FILE       = os.environ.get("QVOICE_LLM_FILE", "qwen2.5-0.5b-instruct-q4_k_m.gguf")
+LLM_REPO       = os.environ.get("QVOICE_LLM_REPO", "LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit")
 
 # ─── Load Whisper ─────────────────────────────────────────────
 print(f"Loading Whisper '{WHISPER_MODEL}'...", file=sys.stderr, flush=True)
@@ -18,19 +17,10 @@ whisper = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8")
 print("Whisper ready.", file=sys.stderr, flush=True)
 
 # ─── Load correction LLM ──────────────────────────────────────
-print(f"Downloading correction model '{LLM_FILE}'...", file=sys.stderr, flush=True)
-from huggingface_hub import hf_hub_download
-from llama_cpp import Llama
+print(f"Loading correction model '{LLM_REPO}'...", file=sys.stderr, flush=True)
+from mlx_lm import load, generate
 
-model_path = hf_hub_download(repo_id=LLM_REPO, filename=LLM_FILE)
-
-print("Loading correction model...", file=sys.stderr, flush=True)
-llm = Llama(
-    model_path=model_path,
-    n_ctx=512,
-    n_gpu_layers=-1,   # full Metal acceleration on Apple Silicon
-    verbose=False,
-)
+llm_model, llm_tokenizer = load(LLM_REPO)
 print("Correction model ready.", file=sys.stderr, flush=True)
 
 print(json.dumps({"status": "ready"}), flush=True)
@@ -80,15 +70,14 @@ for line in sys.stdin:
             print(json.dumps({"status": "ok", "text": raw}), flush=True)
             continue
 
-        response = llm.create_chat_completion(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user",   "content": raw},
-            ],
-            max_tokens=512,
-            temperature=0.1,
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": raw},
+        ]
+        prompt = llm_tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
         )
-        corrected = response["choices"][0]["message"]["content"].strip()
+        corrected = generate(llm_model, llm_tokenizer, prompt=prompt, max_tokens=512, temp=0.1).strip()
 
         print(json.dumps({"status": "ok", "text": corrected}), flush=True)
 
