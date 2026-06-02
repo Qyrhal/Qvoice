@@ -33,13 +33,14 @@ const serverEvents = new EventEmitter()
 
 // ─── Settings ─────────────────────────────────────────────────
 const DEFAULT_SETTINGS = {
+  engine: 'whisper',
   whisperModel: 'base.en',
   llmRepo: 'LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit',
-  llmFile: '',
   systemPrompt: 'You are a speech transcription corrector. Fix grammar, punctuation, and misheard words in the user\'s text. Return ONLY the corrected text — no explanation, no quotes, nothing else.',
   autoPaste: false,
   correctionEnabled: true,
   beamSize: 5,
+  parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v3',
 }
 
 function loadSettings() {
@@ -145,6 +146,7 @@ function updateTrayMenu(state = 'idle') {
       label: 'AI Correction',
       type: 'checkbox',
       checked: correctionEnabled,
+      enabled: (settings.engine || 'whisper') !== 'parakeet',
       click: (item) => {
         correctionEnabled = item.checked
         settings.correctionEnabled = item.checked
@@ -179,9 +181,10 @@ function startTranscribeServer() {
   const script = path.join(__dirname, 'transcribe_server.py')
   const env = {
     ...process.env,
-    QVOICE_MODEL: settings.whisperModel || DEFAULT_SETTINGS.whisperModel,
-    QVOICE_LLM_REPO: settings.llmRepo || DEFAULT_SETTINGS.llmRepo,
-    QVOICE_LLM_FILE: settings.llmFile || DEFAULT_SETTINGS.llmFile,
+    QVOICE_ENGINE:         settings.engine        || DEFAULT_SETTINGS.engine,
+    QVOICE_MODEL:          settings.whisperModel  || DEFAULT_SETTINGS.whisperModel,
+    QVOICE_LLM_REPO:       settings.llmRepo       || DEFAULT_SETTINGS.llmRepo,
+    QVOICE_PARAKEET_MODEL: settings.parakeetModel || DEFAULT_SETTINGS.parakeetModel,
   }
   transcribeProcess = spawn(getPython(), [script], { stdio: ['pipe', 'pipe', 'pipe'], env })
 
@@ -435,9 +438,10 @@ ipcMain.handle('get-settings', () => ({ ...settings }))
 
 ipcMain.handle('save-settings', (_, newSettings) => {
   const needsRestart =
-    newSettings.whisperModel !== settings.whisperModel ||
-    newSettings.llmRepo      !== settings.llmRepo      ||
-    newSettings.llmFile      !== settings.llmFile
+    newSettings.engine        !== settings.engine        ||
+    newSettings.whisperModel  !== settings.whisperModel  ||
+    newSettings.llmRepo       !== settings.llmRepo       ||
+    newSettings.parakeetModel !== settings.parakeetModel
 
   settings = { ...settings, ...newSettings }
   correctionEnabled = settings.correctionEnabled

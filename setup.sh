@@ -8,8 +8,8 @@ echo "── Qvoice Setup ──────────────────
 echo ""
 echo "Creating Python venv with Python 3.12..."
 uv venv .venv --python 3.12
-echo "Installing Python packages (faster-whisper + llama-cpp-python)..."
-uv pip install --python .venv/bin/python faster-whisper llama-cpp-python
+echo "Installing Python packages..."
+uv pip install --python .venv/bin/python faster-whisper mlx-lm parakeet-mlx
 
 # 2. Tray icon (22x22 white circle PNG for macOS menu bar)
 echo ""
@@ -70,9 +70,10 @@ echo ""
 echo "  3. Run the app:"
 echo "     npm start"
 echo ""
-echo "  On first launch two models are downloaded and cached:"
-echo "    Whisper base.en  ~140 MB"
-echo "    Qwen2.5-0.5B     ~350 MB"
+echo "  On first launch models are downloaded and cached:"
+echo "    Whisper base.en      ~140 MB  (Whisper engine)"
+echo "    LFM2.5-1.2B          ~900 MB  (Whisper engine, LLM correction)"
+echo "    Parakeet-TDT-0.6B    ~1.2 GB  (Parakeet engine, on first use)"
 echo "  Subsequent launches are instant."
 echo ""
 echo "  Double-tap Control to start/stop recording."

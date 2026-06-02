@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('qvoice', {
   transcribeAudio:   (buf)  => ipcRenderer.invoke('transcribe-audio', buf),
   transcribePartial: (buf)  => ipcRenderer.invoke('transcribe-partial', buf),
   previewReady:      (text) => ipcRenderer.send('preview-ready', { text }),
+  resultReady:       (text) => ipcRenderer.send('confirm-paste', { text }),
   confirmPaste:      (text) => ipcRenderer.send('confirm-paste', { text }),
   setHeight:         (h)    => ipcRenderer.send('set-height', h),
   hideWindow:        ()     => ipcRenderer.send('hide-window'),

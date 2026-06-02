@@ -12,6 +12,9 @@ const PHASES = {
   result:      { label: 'Pasted',         dot: 'dot-done' },
 }
 
+const PARTIAL_INTERVAL_MS = 2000
+const MIN_PARTIAL_SAMPLES = 16000 // 1 second of audio before first partial
+
 // ─── WAV Recorder ──────────────────────────────────────────────
 class WavRecorder {
   constructor() {
@@ -45,6 +48,17 @@ class WavRecorder {
     return this.analyser
   }
 
+  // Returns WAV of all audio recorded so far without stopping the recorder
+  snapshot() {
+    if (this.chunks.length === 0) return null
+    const total = this.chunks.reduce((n, c) => n + c.length, 0)
+    if (total < MIN_PARTIAL_SAMPLES) return null
+    const pcm = new Float32Array(total)
+    let offset = 0
+    for (const c of this.chunks) { pcm.set(c, offset); offset += c.length }
+    return this._toWav(pcm, this.RATE)
+  }
+
   stop() {
     this.processor.disconnect()
     this.stream.getTracks().forEach((t) => t.stop())
@@ -71,13 +85,13 @@ class WavRecorder {
     v.setUint32(4, 36 + samples.length * 2, true)
     str(8, 'WAVE')
     str(12, 'fmt ')
-    v.setUint32(16, 16, true) // chunk size
-    v.setUint16(20, 1, true) // PCM
-    v.setUint16(22, 1, true) // mono
-    v.setUint32(24, rate, true) // sample rate
-    v.setUint32(28, rate * 2, true) // byte rate
-    v.setUint16(32, 2, true) // block align
-    v.setUint16(34, 16, true) // bits per sample
+    v.setUint32(16, 16, true)
+    v.setUint16(20, 1, true)
+    v.setUint16(22, 1, true)
+    v.setUint32(24, rate, true)
+    v.setUint32(28, rate * 2, true)
+    v.setUint16(32, 2, true)
+    v.setUint16(34, 16, true)
     str(36, 'data')
     v.setUint32(40, samples.length * 2, true)
 
@@ -104,13 +118,12 @@ function Waveform({ analyser }) {
     const step = Math.floor(data.length / NUM_BARS)
     let frame = null
 
-    // Remove idle class so the breath animation stops and JS can drive height
     barRefs.current.forEach(el => el?.classList.remove('idle'))
 
     function tick() {
       frame = requestAnimationFrame(tick)
       analyser.getByteFrequencyData(data)
-      const half = Math.floor(NUM_BARS / 2) // 6
+      const half = Math.floor(NUM_BARS / 2)
       const heights = []
       for (let i = 0; i <= half; i++) {
         let sum = 0
@@ -119,7 +132,6 @@ function Waveform({ analyser }) {
         heights[i] = Math.max(3, Math.min(34, (avg / 255) * 38 + 3))
       }
       for (let i = 0; i < NUM_BARS; i++) {
-        // mirror: left half maps to right half
         const idx = i <= half ? half - i : i - half
         const el = barRefs.current[i]
         if (el) el.style.height = `${heights[idx]}px`
@@ -169,15 +181,21 @@ function StatusRow({ phase }) {
 }
 
 // ─── State Content ─────────────────────────────────────────────
-function StateContent({ state, analyser, resultText }) {
+function StateContent({ state, analyser, resultText, liveText }) {
   switch (state) {
     case 'loading':
       return <LoadingDots />
     case 'recording':
-      return <Waveform analyser={analyser} />
+      return (
+        <>
+          <Waveform analyser={analyser} />
+          {liveText && <div className="live-text">{liveText}</div>}
+        </>
+      )
     case 'transcribing':
-    case 'correcting':
       return <LoadingDots />
+    case 'correcting':
+      return <div className="result-text">{resultText}</div>
     case 'result':
       return <div className="result-text">{resultText}</div>
     default:
@@ -186,8 +204,6 @@ function StateContent({ state, analyser, resultText }) {
 }
 
 // ─── Glass Shape ───────────────────────────────────────────────
-// Renders only the glass border/specular/shadow via liquid-dom.
-// Content sits on top as regular DOM (no HTMLInCanvas needed).
 function GlassShape() {
   const hostRef = useRef(null)
   const [proposal, setProposal] = useState(null)
@@ -213,7 +229,6 @@ function GlassShape() {
           canvasStyle={{
             position: 'absolute', top: 0, left: 0,
             width: `${proposal.width}px`, height: `${proposal.height}px`,
-            // screen blend: black (opaque canvas bg) → transparent, bright specular → additive
             mixBlendMode: 'screen',
           }}
           proposal={proposal}
@@ -249,12 +264,15 @@ function GlassShape() {
 export function App() {
   const [state, setState] = useState('idle')
   const [resultText, setResultText] = useState('')
+  const [liveText, setLiveText] = useState('')
   const [visible, setVisible] = useState(false)
   const [animating, setAnimating] = useState(false)
   const [analyser, setAnalyser] = useState(null)
   const recorderRef = useRef(null)
   const stateRef = useRef(state)
   const overlayRef = useRef(null)
+  const partialTimerRef = useRef(null)
+  const partialInFlightRef = useRef(false)
   stateRef.current = state
 
   function showPanel() {
@@ -265,8 +283,33 @@ export function App() {
   function hidePanel() {
     setAnimating(false)
     setVisible(false)
+    setLiveText('')
     window.qvoice.hideWindow()
   }
+
+  function stopPartialTimer() {
+    if (partialTimerRef.current) {
+      clearInterval(partialTimerRef.current)
+      partialTimerRef.current = null
+    }
+    partialInFlightRef.current = false
+  }
+
+  function startPartialTimer() {
+    stopPartialTimer()
+    partialTimerRef.current = setInterval(async () => {
+      if (!recorderRef.current || partialInFlightRef.current) return
+      const snap = recorderRef.current.snapshot()
+      if (!snap) return
+      partialInFlightRef.current = true
+      try {
+        const result = await window.qvoice.transcribePartial(snap)
+        if (result?.text?.trim()) setLiveText(result.text.trim())
+      } catch {}
+      partialInFlightRef.current = false
+    }, PARTIAL_INTERVAL_MS)
+  }
+
   // IPC listeners
   useEffect(() => {
     const qv = window.qvoice
@@ -282,11 +325,13 @@ export function App() {
 
     qv.onRecordingStart(async () => {
       setState('recording')
+      setLiveText('')
       showPanel()
       recorderRef.current = new WavRecorder()
       try {
         const node = await recorderRef.current.start()
         setAnalyser(node)
+        startPartialTimer()
       } catch (err) {
         console.error('Mic error:', err)
         hidePanel()
@@ -294,6 +339,7 @@ export function App() {
     })
 
     qv.onRecordingStop(async () => {
+      stopPartialTimer()
       setState('transcribing')
       const recorder = recorderRef.current
       recorderRef.current = null
@@ -324,8 +370,8 @@ export function App() {
       }
 
       setResultText(result.text.trim())
+      setLiveText('')
       setState('result')
-      // Animate out, then signal paste (main process hides window)
       setTimeout(() => {
         setAnimating(false)
         qv.resultReady(result.text.trim())
@@ -334,6 +380,7 @@ export function App() {
 
     qv.onTranscriptionProgress((data) => {
       if (data.status === 'transcribed') {
+        setResultText(data.text)
         setState('correcting')
       }
     })
@@ -348,7 +395,7 @@ export function App() {
         window.qvoice.setHeight(Math.round(h))
       }
     }
-  }, [visible, state, resultText])
+  }, [visible, state, resultText, liveText])
 
   if (!visible) return null
 
@@ -362,6 +409,7 @@ export function App() {
           state={state}
           analyser={analyser}
           resultText={resultText}
+          liveText={liveText}
         />
       </div>
     </div>

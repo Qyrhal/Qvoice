@@ -142,6 +142,23 @@
   40%            { transform: scale(1);   opacity: 1;    }
 }
 
+/* ── Live preview (during recording) ────────────────────────── */
+.live-text {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.45);
+  font-style: italic;
+  word-break: break-word;
+  -webkit-app-region: no-drag;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Result ──────────────────────────────────────────────────── */
 .result-text {
   margin-top: 12px;

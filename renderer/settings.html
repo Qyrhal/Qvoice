@@ -30,7 +30,7 @@
       letter-spacing: 0.01em;
       border-bottom: 0.5px solid rgba(255,255,255,0.06);
       flex-shrink: 0;
-      padding-left: 72px; /* offset for traffic lights */
+      padding-left: 72px;
     }
 
     /* ── Scrollable content ──────────────────────────────────── */
@@ -109,6 +109,35 @@
     select:focus, input:focus { border-color: rgba(48,209,88,0.5); }
     select option { background: #1e1e20; }
 
+    /* ── Segmented control ──────────────────────────────────── */
+    .seg-ctrl {
+      display: flex;
+      background: rgba(255,255,255,0.06);
+      border: 0.5px solid rgba(255,255,255,0.10);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .seg-btn {
+      padding: 5px 18px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.45);
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.18s, color 0.18s;
+      white-space: nowrap;
+    }
+
+    .seg-btn.active {
+      background: rgba(255,255,255,0.13);
+      color: rgba(255,255,255,0.92);
+    }
+
     /* ── Textarea ───────────────────────────────────────────── */
     textarea {
       width: 100%;
@@ -165,6 +194,10 @@
       padding-left: 2px;
     }
 
+    /* ── Conditional visibility ──────────────────────────────── */
+    .whisper-only, .parakeet-only { transition: opacity 0.15s; }
+    .hidden { display: none; }
+
     /* ── Save button ────────────────────────────────────────── */
     .btn-save {
       width: 100%;
@@ -196,11 +229,29 @@
 
   <div class="content">
 
+    <!-- Engine -->
+    <div class="section">
+      <div class="section-title">Transcription Engine</div>
+      <div class="section-body">
+        <div class="row">
+          <span class="label">
+            Engine
+            <div class="label-sub" id="engine-sub">CPU · faster-whisper + LLM correction</div>
+          </span>
+          <div class="seg-ctrl" id="engine-ctrl">
+            <button class="seg-btn active" data-value="whisper">Whisper</button>
+            <button class="seg-btn" data-value="parakeet">Parakeet</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Models -->
     <div class="section">
       <div class="section-title">Models</div>
       <div class="section-body">
-        <div class="row">
+        <!-- Whisper-only rows -->
+        <div class="row whisper-only" id="row-whisper-model">
           <span class="label">Whisper Model</span>
           <select id="whisperModel">
             <option value="tiny.en">tiny.en — Fastest</option>
@@ -210,20 +261,24 @@
             <option value="large-v3">large-v3 — Best</option>
           </select>
         </div>
-        <div class="row">
+        <div class="row whisper-only" id="row-llm-repo">
           <span class="label">LLM Repo</span>
           <input type="text" id="llmRepo" placeholder="HuggingFace repo ID">
         </div>
-        <div class="row">
-          <span class="label">LLM File</span>
-          <input type="text" id="llmFile" placeholder="model.gguf">
+        <!-- Parakeet-only rows -->
+        <div class="row parakeet-only hidden" id="row-parakeet-model">
+          <span class="label">Parakeet Model</span>
+          <select id="parakeetModel">
+            <option value="mlx-community/parakeet-tdt-0.6b-v3">0.6B v3 — Fast</option>
+            <option value="mlx-community/parakeet-tdt-1.1b-v2">1.1B v2 — Accurate</option>
+          </select>
         </div>
       </div>
       <div class="note">Model changes restart the AI server</div>
     </div>
 
     <!-- Transcription -->
-    <div class="section">
+    <div class="section whisper-only" id="section-transcription">
       <div class="section-title">Transcription</div>
       <div class="section-body">
         <div class="row">
@@ -238,7 +293,7 @@
     </div>
 
     <!-- System Prompt -->
-    <div class="section">
+    <div class="section whisper-only" id="section-prompt">
       <div class="section-title">System Prompt</div>
       <textarea id="systemPrompt" placeholder="Instructions for the AI correction model…"></textarea>
     </div>
