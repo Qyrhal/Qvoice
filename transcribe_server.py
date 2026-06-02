@@ -50,6 +50,13 @@ for line in sys.stdin:
         req = json.loads(line)
         audio_path = req["audio_path"]
 
+        # Partial mode: fast Whisper only, no LLM (used for live preview during recording)
+        if req.get("partial"):
+            segments, _ = whisper.transcribe(audio_path, beam_size=1, vad_filter=True)
+            raw = " ".join(seg.text.strip() for seg in segments).strip()
+            print(json.dumps({"status": "ok", "text": raw}), flush=True)
+            continue
+
         # Step 1 — Whisper
         segments, _ = whisper.transcribe(
             audio_path,

@@ -166,6 +166,56 @@
       word-break: break-word;
     }
 
+    /* ── Partial live text (during recording) ─────────────────── */
+    .partial-text {
+      margin-top: 10px;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.4);
+      font-style: italic;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      word-break: break-word;
+      -webkit-app-region: no-drag;
+    }
+
+    /* ── Preview actions ──────────────────────────────────────── */
+    .preview-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      -webkit-app-region: no-drag;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 7px 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: opacity 0.12s;
+    }
+
+    .btn:hover  { opacity: 0.8; }
+    .btn:active { opacity: 0.6; }
+
+    .btn-paste    { background: #30d158; color: #000; }
+    .btn-dismiss  { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.65); }
+
+    .hint {
+      font-size: 10px;
+      color: rgba(255,255,255,0.2);
+      text-align: center;
+      margin-top: 8px;
+      letter-spacing: 0.06em;
+      -webkit-app-region: no-drag;
+    }
+
     /* ── Hidden ───────────────────────────────────────────────── */
     .hidden { display: none !important; }
   </style>
@@ -198,6 +248,7 @@
           <div class="bar"></div><div class="bar"></div><div class="bar"></div>
           <div class="bar"></div>
         </div>
+        <div class="partial-text hidden" id="partial-text"></div>
       </div>
 
       <!-- Transcribing state -->
@@ -220,6 +271,20 @@
         <div class="dots">
           <span></span><span></span><span></span>
         </div>
+      </div>
+
+      <!-- Preview state: user confirms before paste -->
+      <div id="s-preview" class="hidden">
+        <div class="status-row">
+          <div class="dot dot-done"></div>
+          <span class="status-label">Preview</span>
+        </div>
+        <div class="result-text" id="preview-text"></div>
+        <div class="preview-actions">
+          <button class="btn btn-dismiss" id="btn-dismiss">Dismiss</button>
+          <button class="btn btn-paste" id="btn-paste">Paste</button>
+        </div>
+        <div class="hint">⌃⌃ to paste</div>
       </div>
 
       <!-- Result state -->

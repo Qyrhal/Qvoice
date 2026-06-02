@@ -32,6 +32,16 @@ class WavRecorder {
     return this.analyser
   }
 
+  // Returns current accumulated audio as WAV without stopping the recorder.
+  snapshot() {
+    if (!this.chunks.length) return null
+    const total = this.chunks.reduce((n, c) => n + c.length, 0)
+    const pcm = new Float32Array(total)
+    let offset = 0
+    for (const c of this.chunks) { pcm.set(c, offset); offset += c.length }
+    return this._toWav(pcm, this.RATE)
+  }
+
   stop() {
     this.processor.disconnect()
     this.stream.getTracks().forEach(t => t.stop())
@@ -72,11 +82,12 @@ class WavRecorder {
 }
 
 // ─── UI ───────────────────────────────────────────────────────
-const panel    = document.getElementById('panel')
-const states   = { loading: 's-loading', recording: 's-recording', transcribing: 's-transcribing', correcting: 's-correcting', result: 's-result' }
-const waveform = document.getElementById('waveform')
-const bars     = waveform.querySelectorAll('.bar')
-const resultEl = document.getElementById('result-text')
+const panel       = document.getElementById('panel')
+const states      = { loading: 's-loading', recording: 's-recording', transcribing: 's-transcribing', correcting: 's-correcting', result: 's-result', preview: 's-preview' }
+const waveform    = document.getElementById('waveform')
+const bars        = waveform.querySelectorAll('.bar')
+const partialTextEl = document.getElementById('partial-text')
+const previewTextEl = document.getElementById('preview-text')
 
 function showState(name) {
   Object.values(states).forEach(id => document.getElementById(id).classList.add('hidden'))
@@ -116,10 +127,41 @@ function stopWaveViz() {
   bars.forEach(b => (b.style.height = '4px'))
 }
 
-// ─── Main Logic ───────────────────────────────────────────────
+// ─── Partial transcription (live preview during recording) ────
 const recorder = new WavRecorder()
+let partialInterval = null
+let partialInFlight = false
+let isActiveRecording = false
 
-// Show loading until server is ready, then hide
+async function doPartialTranscription() {
+  if (partialInFlight || !isActiveRecording) return
+  const wav = recorder.snapshot()
+  if (!wav) return
+  partialInFlight = true
+  try {
+    const result = await window.qvoice.transcribePartial(wav)
+    if (isActiveRecording && result?.text) {
+      partialTextEl.textContent = result.text
+      partialTextEl.classList.remove('hidden')
+      setHeight(panel.scrollHeight + 20)
+    }
+  } catch {}
+  partialInFlight = false
+}
+
+// ─── Preview helpers ──────────────────────────────────────────
+function triggerPaste() {
+  const text = previewTextEl.textContent
+  panel.classList.remove('entering')
+  panel.classList.add('exiting')
+  setTimeout(() => {
+    panel.classList.remove('exiting')
+    panel.classList.add('entering')
+    window.qvoice.confirmPaste(text)
+  }, 180)
+}
+
+// ─── Main Logic ───────────────────────────────────────────────
 showState('loading')
 
 window.qvoice.onServerReady(() => {
@@ -137,6 +179,9 @@ window.qvoice.onShowLoading(() => {
 })
 
 window.qvoice.onRecordingStart(async () => {
+  isActiveRecording = true
+  partialTextEl.classList.add('hidden')
+  partialTextEl.textContent = ''
   showState('recording')
   setHeight(110)
 
@@ -145,11 +190,20 @@ window.qvoice.onRecordingStart(async () => {
     startWaveViz(analyser)
   } catch (err) {
     console.error('Mic access error:', err)
+    isActiveRecording = false
     window.qvoice.hideWindow()
+    return
   }
+
+  // Start sending audio snapshots for live preview every 2s
+  partialInterval = setInterval(doPartialTranscription, 2000)
 })
 
 window.qvoice.onRecordingStop(async () => {
+  isActiveRecording = false
+  clearInterval(partialInterval)
+  partialInterval = null
+
   stopWaveViz()
   showState('transcribing')
 
@@ -176,13 +230,23 @@ window.qvoice.onRecordingStop(async () => {
     return
   }
 
-  // Animate panel out, then signal main to hide + paste.
-  // Main hides the window before pasting so the previous app regains focus.
-  panel.classList.remove('entering')
-  panel.classList.add('exiting')
-  setTimeout(() => {
-    panel.classList.remove('exiting')
-    panel.classList.add('entering')
-    window.qvoice.resultReady(result.text.trim())
-  }, 180)
+  // Show preview — user confirms before paste
+  previewTextEl.textContent = result.text.trim()
+  showState('preview')
+  requestAnimationFrame(() => setHeight(panel.scrollHeight + 20))
+  window.qvoice.previewReady(result.text.trim())
+})
+
+// Double-tap Control from main.js to confirm paste
+window.qvoice.onPreviewConfirmed(() => {
+  triggerPaste()
+})
+
+// Button handlers
+document.getElementById('btn-paste').addEventListener('click', () => {
+  triggerPaste()
+})
+
+document.getElementById('btn-dismiss').addEventListener('click', () => {
+  window.qvoice.hideWindow()
 })

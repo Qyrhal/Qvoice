@@ -15,7 +15,9 @@ let isRecording = false
 let transcribeProcess = null
 let serverReady = false
 let serverBuffer = ''
-let pendingCallbacks = null  // { onProgress, resolve, reject }
+let pendingQueue = []  // array of { onProgress, resolve, reject }
+let isPreviewing = false
+let previewText = ''
 let recordingToken = null
 let correctionEnabled = true
 const serverEvents = new EventEmitter()
@@ -127,11 +129,10 @@ function startTranscribeServer() {
         serverReady = true
         serverEvents.emit('ready')
         win?.webContents.send('server-ready')
-      } else if (msg.status === 'transcribed' && pendingCallbacks) {
-        pendingCallbacks.onProgress(msg)
-      } else if ((msg.status === 'ok' || msg.status === 'error') && pendingCallbacks) {
-        const { resolve, reject } = pendingCallbacks
-        pendingCallbacks = null
+      } else if (msg.status === 'transcribed' && pendingQueue.length > 0) {
+        pendingQueue[0].onProgress(msg)
+      } else if ((msg.status === 'ok' || msg.status === 'error') && pendingQueue.length > 0) {
+        const { resolve, reject } = pendingQueue.shift()
         msg.status === 'ok' ? resolve(msg) : reject(new Error(msg.error))
       }
     }
@@ -146,28 +147,54 @@ function startTranscribeServer() {
   })
 }
 
-function runTranscription(audioPath, onProgress) {
+function runTranscription(audioPath, onProgress, options = {}) {
   return new Promise((resolve, reject) => {
     if (!transcribeProcess || !serverReady) {
       reject(new Error('Server not ready'))
       return
     }
 
+    const timeoutMs = options.partial ? 10000 : 60000
+    let settled = false
+
     const timeout = setTimeout(() => {
-      if (pendingCallbacks) {
-        pendingCallbacks = null
+      if (!settled) {
+        settled = true
+        const idx = pendingQueue.findIndex(p => p.resolve === wrappedResolve)
+        if (idx !== -1) pendingQueue.splice(idx, 1)
         reject(new Error('Transcription timed out'))
       }
-    }, 60000)
+    }, timeoutMs)
 
-    pendingCallbacks = {
-      onProgress,
-      resolve: (val) => { clearTimeout(timeout); resolve(val) },
-      reject:  (err) => { clearTimeout(timeout); reject(err) },
-    }
+    const wrappedResolve = (val) => { if (!settled) { settled = true; clearTimeout(timeout); resolve(val) } }
+    const wrappedReject  = (err) => { if (!settled) { settled = true; clearTimeout(timeout); reject(err)  } }
 
-    transcribeProcess.stdin.write(JSON.stringify({ audio_path: audioPath, correction: correctionEnabled }) + '\n')
+    pendingQueue.push({ onProgress: onProgress || (() => {}), resolve: wrappedResolve, reject: wrappedReject })
+
+    transcribeProcess.stdin.write(JSON.stringify({
+      audio_path: audioPath,
+      correction: !options.partial && correctionEnabled,
+      partial: options.partial || false,
+    }) + '\n')
   })
+}
+
+function doPaste(text) {
+  isPreviewing = false
+  previewText = ''
+  clipboard.writeText(text)
+  win.hide()
+  win.setSize(520, 110)
+  setTimeout(() => {
+    try {
+      execSync(
+        `osascript -e 'tell application "System Events" to keystroke "v" using {command down}'`,
+        { timeout: 1000 }
+      )
+    } catch (e) {
+      console.error('Auto-paste failed:', e.message)
+    }
+  }, 200)
 }
 
 // ─── Recording ────────────────────────────────────────────────
@@ -222,6 +249,7 @@ function setupHotkey() {
       if (now - lastCtrlTime < DOUBLE_TAP_MS) {
         lastCtrlTime = 0  // reset so triple-tap doesn't re-fire
         if (isRecording) stopRecording()
+        else if (isPreviewing) doPaste(previewText)
         else startRecording()
       } else {
         lastCtrlTime = now
@@ -234,6 +262,7 @@ function setupHotkey() {
     console.warn('uiohook unavailable, falling back to Ctrl+Shift+R:', e.message)
     globalShortcut.register('Ctrl+Shift+R', () => {
       if (isRecording) stopRecording()
+      else if (isPreviewing) doPaste(previewText)
       else startRecording()
     })
     console.log('Fallback: Ctrl+Shift+R to toggle')
@@ -254,31 +283,32 @@ ipcMain.handle('transcribe-audio', async (event, audioBuffer) => {
   }
 })
 
-ipcMain.on('result-ready', (event, { text }) => {
-  clipboard.writeText(text)
-
-  // Hide first — this returns focus to the previous app naturally.
-  // Then paste into whatever is now frontmost.
-  win.hide()
-  win.setSize(520, 110)
-
-  setTimeout(() => {
-    try {
-      execSync(
-        `osascript -e 'tell application "System Events" to keystroke "v" using {command down}'`,
-        { timeout: 1000 }
-      )
-    } catch (e) {
-      console.error('Auto-paste failed:', e.message)
-    }
-  }, 200)
+ipcMain.handle('transcribe-partial', async (_, audioBuffer) => {
+  const tmpPath = path.join(os.tmpdir(), `qvoice-partial-${Date.now()}.wav`)
+  fs.writeFileSync(tmpPath, Buffer.from(audioBuffer))
+  try {
+    return await runTranscription(tmpPath, null, { partial: true })
+  } finally {
+    try { fs.unlinkSync(tmpPath) } catch {}
+  }
 })
 
-ipcMain.on('set-height', (event, h) => {
-  win.setSize(520, Math.max(80, Math.min(h, 300)))
+ipcMain.on('preview-ready', (_, { text }) => {
+  isPreviewing = true
+  previewText = text
+})
+
+ipcMain.on('confirm-paste', (_, { text }) => {
+  doPaste(text || previewText)
+})
+
+ipcMain.on('set-height', (_, h) => {
+  win.setSize(520, Math.max(80, Math.min(h, 400)))
 })
 
 ipcMain.on('hide-window', () => {
+  isPreviewing = false
+  previewText = ''
   win.hide()
   win.setSize(520, 110)
 })
