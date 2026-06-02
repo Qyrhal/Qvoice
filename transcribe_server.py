@@ -52,6 +52,15 @@ if ENGINE == "parakeet":
 
     print(f"Loading Parakeet '{PARAKEET_MODEL}'...", file=sys.stderr, flush=True)
     asr_model = from_pretrained(PARAKEET_MODEL)
+
+    # Warm up: run 0.5 s of silence through the full pipeline to trigger MLX
+    # JIT compilation before the first real recording arrives.
+    print("Warming up Parakeet...", file=sys.stderr, flush=True)
+    _sr = asr_model.preprocessor_config.sample_rate
+    _silence = mx.zeros(_sr // 2, dtype=mx.float32)  # 0.5 s
+    _dummy_mel = get_logmel(_silence, asr_model.preprocessor_config)
+    _ = asr_model.generate(_dummy_mel)
+    mx.eval(_)
     print("Parakeet ready.", file=sys.stderr, flush=True)
     whisper = None
     llm_model = None
