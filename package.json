@@ -4,13 +4,22 @@
   "description": "Local voice-to-text with glass UI",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "dev": "vite build --config vite.config.js && electron .",
+    "build": "vite build --config vite.config.js",
+    "start": "vite build --config vite.config.js && electron .",
     "setup": "bash setup.sh"
   },
   "dependencies": {
+    "@liquid-dom/core": "^0.1.1",
+    "@liquid-dom/layout": "^0.2.0",
+    "@liquid-dom/react": "^0.1.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "uiohook-napi": "^1.5.4"
   },
   "devDependencies": {
-    "electron": "^42.3.0"
+    "@vitejs/plugin-react": "^6.0.2",
+    "electron": "^42.3.0",
+    "vite": "^8.0.16"
   }
 }

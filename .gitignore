@@ -6,5 +6,6 @@ __pycache__/
 .DS_Store
 dist/
 out/
+renderer/dist/
 .claude/
 package-lock.json

@@ -6,6 +6,12 @@ const path = require('path')
 const { execSync, spawn, spawnSync } = require('child_process')
 const fs = require('fs')
 const os = require('os')
+
+// WebGPU for liquid-dom rendering.
+// HTMLInCanvas is the correct Blink feature name for HTML-in-Canvas (chrome://flags/#canvas-draw-element).
+app.commandLine.appendSwitch('enable-features', 'WebGPU')
+app.commandLine.appendSwitch('enable-blink-features', 'HTMLInCanvas')
+
 const EventEmitter = require('events')
 
 // ─── State ────────────────────────────────────────────────────
@@ -77,8 +83,11 @@ function createWindow() {
     x: Math.floor(workAreaSize.width / 2 - 260),
     y: 56,
     frame: false,
+    vibrancy: 'hud',
+    visualEffectState: 'active',
     transparent: true,
-    hasShadow: false,
+    hasShadow: true,
+    roundedCorners: true,
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
@@ -93,7 +102,14 @@ function createWindow() {
 
   win.setAlwaysOnTop(true, 'floating')
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-  win.loadFile('renderer/index.html')
+
+  // Load Vite-built renderer; fall back to source for dev
+  const rendererPath = path.join(__dirname, 'renderer', 'dist', 'index.html')
+  const loadPath = fs.existsSync(rendererPath)
+    ? rendererPath
+    : path.join(__dirname, 'renderer', 'index.html')
+  win.loadFile(loadPath)
+
   win.webContents.on('did-finish-load', () => {
     win.webContents.send('settings-update', { autoPaste: settings.autoPaste })
   })
@@ -143,7 +159,6 @@ function updateTrayMenu(state = 'idle') {
 
 // ─── Transcription Server ─────────────────────────────────────
 function getPython() {
-  // Prefer the venv Python (ensures faster-whisper is available)
   const venvPy = path.join(__dirname, '.venv', 'bin', 'python')
   return fs.existsSync(venvPy) ? venvPy : 'python3'
 }
@@ -292,7 +307,6 @@ async function startRecording() {
     await new Promise(resolve => serverEvents.once('ready', resolve))
   }
 
-  // Check if cancelled while waiting for server
   if (recordingToken !== token || !isRecording) {
     win.hide()
     updateTrayMenu('idle')

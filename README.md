@@ -30,21 +30,22 @@ Recording → Transcribing → Correcting → Pasted
 ## Setup
 
 ```bash
-git clone https://github.com/your-username/qvoice
+git clone https://github.com/Qyrhal/qvoice
 cd qvoice
 bash setup.sh
 ```
 
 The setup script:
+
 - Creates a Python 3.12 venv and installs `faster-whisper`
 - Generates the menu bar icon
 - Runs `npm install`
 
 On **first launch**, two models are downloaded and cached (~490 MB total). Subsequent launches are instant.
 
-| Model | Size | Purpose |
-|---|---|---|
-| Whisper `base.en` | ~140 MB | Speech-to-text |
+| Model                    | Size    | Purpose                    |
+| ------------------------ | ------- | -------------------------- |
+| Whisper `base.en`        | ~140 MB | Speech-to-text             |
 | Qwen2.5-0.5B-Instruct Q4 | ~350 MB | Grammar & error correction |
 
 ## Run
@@ -60,6 +61,7 @@ The app lives in your menu bar as **Q**. No dock icon.
 Two macOS permissions are required:
 
 **Accessibility** (for the global double-Control hotkey)
+
 > System Settings → Privacy & Security → Accessibility → add Terminal (or your IDE)
 
 **Microphone** (prompted automatically on first recording)
@@ -68,11 +70,11 @@ Two macOS permissions are required:
 
 The default model is `base.en` — fast (~2–3s) and good for English. Swap it via env var:
 
-| Model | Size | Speed | Accuracy |
-|---|---|---|---|
-| `base.en` (default) | 140 MB | ~2–3s | Good |
-| `small.en` | 460 MB | ~4–6s | Better |
-| `medium.en` | 1.4 GB | ~10s+ | Best |
+| Model               | Size   | Speed | Accuracy |
+| ------------------- | ------ | ----- | -------- |
+| `base.en` (default) | 140 MB | ~2–3s | Good     |
+| `small.en`          | 460 MB | ~4–6s | Better   |
+| `medium.en`         | 1.4 GB | ~10s+ | Best     |
 
 ```bash
 QVOICE_MODEL=small.en npm start
@@ -80,14 +82,14 @@ QVOICE_MODEL=small.en npm start
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| App shell | [Electron](https://electronjs.org) |
-| Global hotkey | [uiohook-napi](https://github.com/SnosMe/uiohook-napi) |
-| Transcription | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — Whisper base.en |
-| Correction | [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) — Qwen2.5-0.5B-Instruct (Metal) |
-| Audio format | 16 kHz mono WAV (encoded in-browser, no ffmpeg needed) |
-| Paste | AppleScript `System Events` keystroke |
+| Layer         | Technology                                                                                      |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| App shell     | [Electron](https://electronjs.org)                                                              |
+| Global hotkey | [uiohook-napi](https://github.com/SnosMe/uiohook-napi)                                          |
+| Transcription | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — Whisper base.en                   |
+| Correction    | [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) — Qwen2.5-0.5B-Instruct (Metal) |
+| Audio format  | 16 kHz mono WAV (encoded in-browser, no ffmpeg needed)                                          |
+| Paste         | AppleScript `System Events` keystroke                                                           |
 
 ## License
 

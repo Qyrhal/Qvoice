@@ -1,0 +1,155 @@
+/* ── Glass Panel ─────────────────────────────────────────────── */
+.glass-panel {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  min-height: 60px;
+  -webkit-app-region: drag;
+  will-change: transform, opacity;
+  background: transparent;
+}
+
+.glass-panel.entering {
+  animation: slideIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+}
+
+.glass-panel.exiting {
+  animation: slideOut 0.18s ease-in forwards;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+@keyframes slideOut {
+  from { opacity: 1; transform: translateY(0)   scale(1);    }
+  to   { opacity: 0; transform: translateY(-5px) scale(0.97); }
+}
+
+/* ── Canvas Layer ────────────────────────────────────────────── */
+.glass-canvas-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ── DOM Overlay ─────────────────────────────────────────────── */
+.glass-overlay {
+  position: relative;
+  z-index: 1;
+  padding: 16px 20px 18px;
+  pointer-events: auto;
+}
+
+/* ── Status Row ──────────────────────────────────────────────── */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  -webkit-app-region: no-drag;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-record  { background: #ff3b30; box-shadow: 0 0 6px #ff3b3066; animation: blink 1.2s ease-in-out infinite; }
+.dot-process { background: #ffd60a; }
+.dot-correct { background: #bf5af2; }
+.dot-done    { background: #30d158; }
+.dot-idle    { background: rgba(255,255,255,0.2); }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.status-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+  -webkit-app-region: no-drag;
+}
+
+/* ── Waveform ────────────────────────────────────────────────── */
+.waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 38px;
+  margin-top: 14px;
+  -webkit-app-region: no-drag;
+}
+
+.bar {
+  width: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.55);
+  height: 4px;
+  transition: height 0.06s ease-out;
+}
+
+.bar.idle {
+  animation: breath 2s ease-in-out infinite;
+}
+.bar.idle:nth-child(1)  { animation-delay: 0.0s; }
+.bar.idle:nth-child(2)  { animation-delay: 0.1s; }
+.bar.idle:nth-child(3)  { animation-delay: 0.2s; }
+.bar.idle:nth-child(4)  { animation-delay: 0.3s; }
+.bar.idle:nth-child(5)  { animation-delay: 0.4s; }
+.bar.idle:nth-child(6)  { animation-delay: 0.5s; }
+.bar.idle:nth-child(7)  { animation-delay: 0.6s; }
+.bar.idle:nth-child(8)  { animation-delay: 0.5s; }
+.bar.idle:nth-child(9)  { animation-delay: 0.4s; }
+.bar.idle:nth-child(10) { animation-delay: 0.3s; }
+.bar.idle:nth-child(11) { animation-delay: 0.2s; }
+.bar.idle:nth-child(12) { animation-delay: 0.1s; }
+.bar.idle:nth-child(13) { animation-delay: 0.0s; }
+
+@keyframes breath {
+  0%, 100% { height: 3px;  opacity: 0.3; }
+  50%       { height: 14px; opacity: 0.6; }
+}
+
+/* ── Loading dots ────────────────────────────────────────────── */
+.dots {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  animation: dotPulse 1.3s ease-in-out infinite;
+}
+
+.dots span:nth-child(2) { animation-delay: 0.18s; }
+.dots span:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.25; }
+  40%            { transform: scale(1);   opacity: 1;    }
+}
+
+/* ── Result ──────────────────────────────────────────────────── */
+.result-text {
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+  -webkit-app-region: no-drag;
+  user-select: text;
+  cursor: text;
+  word-break: break-word;
+}
