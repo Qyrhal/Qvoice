@@ -2,8 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { LiquidCanvas, GlassContainer, Glass, Frame } from '@liquid-dom/react'
 import './Settings.css'
 
+const ENGINE_META = {
+  whisper:  'CPU · faster-whisper + LLM correction',
+  parakeet: 'Apple Silicon GPU · parakeet-mlx',
+}
+
 // ─── Glass Card ────────────────────────────────────────────────
-function GlassCard({ children, className = '' }) {
+function GlassCard({ children }) {
   const hostRef = useRef(null)
   const [proposal, setProposal] = useState(null)
 
@@ -20,7 +25,7 @@ function GlassCard({ children, className = '' }) {
   }, [])
 
   return (
-    <div ref={hostRef} className={`glass-card ${className}`}>
+    <div ref={hostRef} className="glass-card">
       {proposal && (
         <LiquidCanvas
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
@@ -67,16 +72,34 @@ function Toggle({ on, onClick }) {
   return <div className={`toggle ${on ? 'on' : ''}`} onClick={onClick} />
 }
 
+// ─── Segmented Control ─────────────────────────────────────────
+function SegControl({ value, options, onChange }) {
+  return (
+    <div className="seg-ctrl">
+      {options.map(({ val, label }) => (
+        <button
+          key={val}
+          className={`seg-btn ${value === val ? 'active' : ''}`}
+          onClick={() => onChange(val)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ─── Settings ──────────────────────────────────────────────────
 export function Settings() {
   const [form, setForm] = useState({
+    engine: 'whisper',
     whisperModel: 'base.en',
     llmRepo: '',
-    llmFile: '',
     systemPrompt: '',
     beamSize: 5,
+    parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v3',
     correctionEnabled: true,
-    autoPaste: false,
+    autoPaste: true,
   })
   const [saved, setSaved] = useState(false)
 
@@ -100,59 +123,96 @@ export function Settings() {
     setTimeout(() => setSaved(false), 1500)
   }
 
+  const isParakeet = form.engine === 'parakeet'
+
   return (
     <>
       <div className="titlebar">Settings</div>
       <div className="content">
 
+        {/* Engine */}
+        <div className="section">
+          <div className="section-title">Transcription Engine</div>
+          <GlassCard>
+            <div className="row">
+              <span className="label">
+                Engine
+                <div className="label-sub">{ENGINE_META[form.engine] || ''}</div>
+              </span>
+              <SegControl
+                value={form.engine}
+                options={[{ val: 'whisper', label: 'Whisper' }, { val: 'parakeet', label: 'Parakeet' }]}
+                onChange={v => set('engine', v)}
+              />
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Models */}
         <div className="section">
           <div className="section-title">Models</div>
           <GlassCard>
-            <div className="row">
-              <span className="label">Whisper Model</span>
-              <select value={form.whisperModel} onChange={e => set('whisperModel', e.target.value)}>
-                <option value="tiny.en">tiny.en — Fastest</option>
-                <option value="base.en">base.en — Fast</option>
-                <option value="small.en">small.en — Balanced</option>
-                <option value="medium.en">medium.en — Accurate</option>
-                <option value="large-v3">large-v3 — Best</option>
-              </select>
-            </div>
-            <div className="row">
-              <span className="label">LLM Repo</span>
-              <input type="text" value={form.llmRepo} onChange={e => set('llmRepo', e.target.value)} placeholder="HuggingFace repo ID" />
-            </div>
-            <div className="row">
-              <span className="label">LLM File</span>
-              <input type="text" value={form.llmFile} onChange={e => set('llmFile', e.target.value)} placeholder="model.gguf" />
-            </div>
+            {!isParakeet && (
+              <>
+                <div className="row">
+                  <span className="label">Whisper Model</span>
+                  <select value={form.whisperModel} onChange={e => set('whisperModel', e.target.value)}>
+                    <option value="tiny.en">tiny.en — Fastest</option>
+                    <option value="base.en">base.en — Fast</option>
+                    <option value="small.en">small.en — Balanced</option>
+                    <option value="medium.en">medium.en — Accurate</option>
+                    <option value="large-v3">large-v3 — Best</option>
+                  </select>
+                </div>
+                <div className="row">
+                  <span className="label">LLM Repo</span>
+                  <input type="text" value={form.llmRepo} onChange={e => set('llmRepo', e.target.value)} placeholder="HuggingFace repo ID" />
+                </div>
+              </>
+            )}
+            {isParakeet && (
+              <div className="row">
+                <span className="label">Parakeet Model</span>
+                <select value={form.parakeetModel} onChange={e => set('parakeetModel', e.target.value)}>
+                  <option value="mlx-community/parakeet-tdt-0.6b-v3">0.6B v3 — Fast</option>
+                  <option value="mlx-community/parakeet-tdt-1.1b-v2">1.1B v2 — Accurate</option>
+                </select>
+              </div>
+            )}
           </GlassCard>
           <div className="note">Model changes restart the AI server</div>
         </div>
 
-        <div className="section">
-          <div className="section-title">Transcription</div>
-          <GlassCard>
-            <div className="row">
-              <span className="label">AI Correction</span>
-              <Toggle on={form.correctionEnabled} onClick={() => set('correctionEnabled', !form.correctionEnabled)} />
-            </div>
-            <div className="row">
-              <span className="label">Beam Size</span>
-              <input type="number" value={form.beamSize} min="1" max="10" onChange={e => set('beamSize', e.target.value)} />
-            </div>
-          </GlassCard>
-        </div>
+        {/* Transcription (whisper only) */}
+        {!isParakeet && (
+          <div className="section">
+            <div className="section-title">Transcription</div>
+            <GlassCard>
+              <div className="row">
+                <span className="label">AI Correction</span>
+                <Toggle on={form.correctionEnabled} onClick={() => set('correctionEnabled', !form.correctionEnabled)} />
+              </div>
+              <div className="row">
+                <span className="label">Beam Size</span>
+                <input type="number" value={form.beamSize} min="1" max="10" onChange={e => set('beamSize', e.target.value)} />
+              </div>
+            </GlassCard>
+          </div>
+        )}
 
-        <div className="section">
-          <div className="section-title">System Prompt</div>
-          <textarea
-            value={form.systemPrompt}
-            onChange={e => set('systemPrompt', e.target.value)}
-            placeholder="Instructions for the AI correction model…"
-          />
-        </div>
+        {/* System Prompt (whisper only) */}
+        {!isParakeet && (
+          <div className="section">
+            <div className="section-title">System Prompt</div>
+            <textarea
+              value={form.systemPrompt}
+              onChange={e => set('systemPrompt', e.target.value)}
+              placeholder="Instructions for the AI correction model…"
+            />
+          </div>
+        )}
 
+        {/* Behavior */}
         <div className="section">
           <div className="section-title">Behavior</div>
           <GlassCard>

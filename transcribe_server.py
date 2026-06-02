@@ -80,6 +80,7 @@ else:
 
     print(f"Loading correction model '{LLM_REPO}'...", file=sys.stderr, flush=True)
     from mlx_lm import load, generate
+    from mlx_lm.sample_utils import make_sampler
     llm_model, llm_tokenizer = load(LLM_REPO)
     print("Correction model ready.", file=sys.stderr, flush=True)
     asr_model = None
@@ -145,7 +146,7 @@ for line in sys.stdin:
         prompt = llm_tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
-        corrected = generate(llm_model, llm_tokenizer, prompt=prompt, max_tokens=512, temp=0.1).strip()
+        corrected = generate(llm_model, llm_tokenizer, prompt=prompt, max_tokens=512, sampler=make_sampler(temp=0.1)).strip()
 
         print(json.dumps({"status": "ok", "text": corrected}), flush=True)
 

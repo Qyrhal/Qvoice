@@ -116,6 +116,35 @@ input[type="number"] { width: 64px; text-align: center; }
 select:focus, input:focus { border-color: rgba(48,209,88,0.5); }
 select option { background: #1e1e20; }
 
+/* ── Segmented control ──────────────────────────────────── */
+.seg-ctrl {
+  display: flex;
+  background: rgba(255,255,255,0.06);
+  border: 0.5px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.seg-btn {
+  padding: 5px 18px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.45);
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+
+.seg-btn.active {
+  background: rgba(255,255,255,0.13);
+  color: rgba(255,255,255,0.92);
+}
+
 /* ── Textarea ───────────────────────────────────────────── */
 textarea {
   width: 100%;

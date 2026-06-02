@@ -14,22 +14,31 @@
 Local voice-to-text for macOS — double-tap Control to record, transcribe, and paste, all on-device.
 
 ## Stack
-Electron 42 (desktop shell) · Node.js 18+ · Python 3.12 (uv venv) · faster-whisper · llama-cpp-python · uiohook-napi
+Electron 42 (desktop shell) · Node.js 18+ · Python 3.12 (uv venv) · faster-whisper · mlx-lm · parakeet-mlx · uiohook-napi · React 19 · Vite 8 · @liquid-dom/react
 
 ## Commands
 ```bash
-build:   (none — electron . runs directly)
-test:    (none — no test suite)
+build:   npm run build          (Vite builds renderer/ → renderer/dist/)
+test:    .venv/bin/python test_pipeline.py          (integration: transcription server)
+         .venv/bin/python test_settings_defaults.py (unit: settings config consistency)
 lint:    (none — no linter configured)
-run:     npm start
+run:     npm start              (build + electron .)
 ```
 
 ## Structure
 ```
-main.js           ← Electron entry: window, tray, hotkey, IPC
-preload.js        ← contextBridge: IPC bridge to renderer
-renderer/         ← HTML/CSS/JS: glass panel UI + waveform
-transcribe_server.py  ← Python subprocess: Whisper + Qwen2.5 correction loop
+main.js                   ← Electron entry: window, tray, hotkey, IPC, settings persistence
+preload.js                ← contextBridge: qvoice API for overlay window
+preload-settings.js       ← contextBridge: qvoiceSettings API for settings window
+renderer/
+  index.html              ← Vite entry for overlay (React)
+  main.jsx / App.jsx      ← Overlay UI with liquid-dom glass panel
+  settings.html           ← Vite entry for settings window (React)
+  settings-main.jsx       ← Settings entry point
+  Settings.jsx / .css     ← Settings UI with liquid-dom glass cards
+transcribe_server.py      ← Python subprocess: Whisper/Parakeet + LFM2.5 correction
+test_pipeline.py          ← Integration tests for transcription server
+test_settings_defaults.py ← Unit tests for settings config consistency
 ```
 
 ## Code style
@@ -41,8 +50,8 @@ transcribe_server.py  ← Python subprocess: Whisper + Qwen2.5 correction loop
 - No external calls — all processing on-device
 
 ## Testing
-- Run the app (`npm start`) to manually verify UI states and transcription flow
-- No automated test suite currently
+- `test_pipeline.py` — integration tests: spawns the whisper server, runs 22 cases (silence, tone, partial, error recovery, stress)
+- `test_settings_defaults.py` — unit tests: validates DEFAULT_SETTINGS keys/defaults, cross-checks main.js vs transcribe_server.py env defaults, checks settings.js for stale element refs
 
 ## Security
 - All processing runs on-device (Whisper + Qwen2.5) — no network calls

@@ -23,7 +23,6 @@ function applyEngine(engine) {
   // Whisper-only rows inside Models section
   document.getElementById('row-whisper-model').classList.toggle('hidden', isParakeet)
   document.getElementById('row-llm-repo').classList.toggle('hidden', isParakeet)
-  document.getElementById('row-llm-file').classList.toggle('hidden', isParakeet)
 
   // Parakeet-only rows
   document.getElementById('row-parakeet-model').classList.toggle('hidden', !isParakeet)

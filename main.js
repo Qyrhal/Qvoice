@@ -37,7 +37,7 @@ const DEFAULT_SETTINGS = {
   whisperModel: 'base.en',
   llmRepo: 'LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit',
   systemPrompt: 'You are a speech transcription corrector. Fix grammar, punctuation, and misheard words in the user\'s text. Return ONLY the corrected text — no explanation, no quotes, nothing else.',
-  autoPaste: false,
+  autoPaste: true,
   correctionEnabled: true,
   beamSize: 5,
   parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v3',
