@@ -7,6 +7,7 @@
     "dev": "vite build --config vite.config.js && electron .",
     "build": "vite build --config vite.config.js",
     "start": "vite build --config vite.config.js && electron .",
+    "dist": "npm run build && electron-builder --mac --dir",
     "setup": "bash setup.sh"
   },
   "dependencies": {
@@ -20,6 +21,28 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.2",
     "electron": "^42.3.0",
+    "electron-builder": "^26.8.1",
     "vite": "^8.0.16"
+  },
+  "build": {
+    "appId": "com.qvoice.app",
+    "productName": "Qvoice",
+    "asar": false,
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [{ "target": "dir", "arch": ["arm64"] }]
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "preload-settings.js",
+      "transcribe_server.py",
+      "renderer/dist/**",
+      "assets/**",
+      ".venv/**",
+      "!.venv/**/__pycache__/**",
+      "!.venv/**/*.pyc",
+      "!.venv/**/*.pyo"
+    ]
   }
 }

@@ -46,10 +46,15 @@ def load_wav_direct(path, target_sr):
 
 # ─── Load models ──────────────────────────────────────────────
 if ENGINE == "parakeet":
-    import mlx.core as mx
-    from parakeet_mlx import from_pretrained, DecodingConfig
-    from parakeet_mlx.audio import get_logmel
+    try:
+        import mlx.core as mx
+        from parakeet_mlx import from_pretrained, DecodingConfig
+        from parakeet_mlx.audio import get_logmel
+    except ModuleNotFoundError as _e:
+        print(f"[warn] parakeet_mlx not installed ({_e}), falling back to whisper", file=sys.stderr, flush=True)
+        ENGINE = "whisper"
 
+if ENGINE == "parakeet":
     print(f"Loading Parakeet '{PARAKEET_MODEL}'...", file=sys.stderr, flush=True)
     asr_model = from_pretrained(PARAKEET_MODEL)
 
@@ -72,7 +77,7 @@ if ENGINE == "parakeet":
         results = asr_model.generate(mel)
         return results[0].text.strip() if results else ''
 
-else:
+if ENGINE != "parakeet":
     print(f"Loading Whisper '{WHISPER_MODEL}'...", file=sys.stderr, flush=True)
     from faster_whisper import WhisperModel
     whisper = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8")
