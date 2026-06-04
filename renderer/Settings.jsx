@@ -122,7 +122,7 @@ function StatusIcon({ kind, pct }) {
 }
 
 // ─── Model Select ─────────────────────────────────────────────
-function ModelSelect({ value, options, onChange, onSelectModel, modelStatus, downloads, modelStatusFor }) {
+function ModelSelect({ value, options, onChange, onSelectModel, modelKey, modelStatus, downloads, modelStatusFor }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -134,15 +134,14 @@ function ModelSelect({ value, options, onChange, onSelectModel, modelStatus, dow
   }, [open])
 
   const selected = options.find(o => o.val === value)
-  const group = modelStatus ? (modelStatus.parakeet ? 'parakeet' : 'whisper') : 'whisper'
 
   const handleSelect = (val) => {
     onChange(val)
     setOpen(false)
-    if (onSelectModel) onSelectModel(val, group)
+    if (onSelectModel) onSelectModel(val, modelKey)
   }
 
-  const triggerSt = modelStatusFor ? modelStatusFor(value, group) : null
+  const triggerSt = modelStatusFor ? modelStatusFor(value, modelKey) : null
 
   return (
     <div className="model-select" ref={ref}>
@@ -154,7 +153,7 @@ function ModelSelect({ value, options, onChange, onSelectModel, modelStatus, dow
       {open && (
         <div className="model-select-dropdown">
           {options.map(opt => {
-            const s = modelStatusFor ? modelStatusFor(opt.val, group) : null
+            const s = modelStatusFor ? modelStatusFor(opt.val, modelKey) : null
             return (
               <button key={opt.val} className={`model-select-option ${opt.val === value ? 'active' : ''}`} onClick={() => handleSelect(opt.val)}>
                 {s ? <StatusIcon kind={s.kind} pct={s.pct} /> : null}
@@ -328,13 +327,13 @@ export function Settings() {
           <GlassCard>
             {!isParakeet && (
               <>
-                <div className="row"><span className="label">Whisper Model</span><ModelSelect value={form.whisperModel} options={whisperOptions} onChange={v => set('whisperModel', v)} modelStatus={modelStatus} onSelectModel={onSelectModel} downloads={downloads} modelStatusFor={modelStatusFor} /></div>
+                <div className="row"><span className="label">Whisper Model</span><ModelSelect value={form.whisperModel} options={whisperOptions} onChange={v => set('whisperModel', v)} modelKey="whisper" modelStatus={modelStatus} onSelectModel={onSelectModel} downloads={downloads} modelStatusFor={modelStatusFor} /></div>
                 <div className="row"><span className="label">LLM Repo</span><ModelCombo value={form.llmRepo} options={llmOptions} onChange={v => set('llmRepo', v)} modelStatus={modelStatus} onSelectModel={onSelectModel} downloads={downloads} modelStatusFor={modelStatusFor} placeholder="HuggingFace repo ID" /></div>
               </>
             )}
             {isParakeet && (
               <>
-                <div className="row"><span className="label">Parakeet Model</span><ModelSelect value={form.parakeetModel} options={parakeetOptions} onChange={v => set('parakeetModel', v)} modelStatus={modelStatus} onSelectModel={onSelectModel} downloads={downloads} modelStatusFor={modelStatusFor} /></div>
+                <div className="row"><span className="label">Parakeet Model</span><ModelSelect value={form.parakeetModel} options={parakeetOptions} onChange={v => set('parakeetModel', v)} modelKey="parakeet" modelStatus={modelStatus} onSelectModel={onSelectModel} downloads={downloads} modelStatusFor={modelStatusFor} /></div>
                 <div className="row"><span className="label">LLM Repo</span><ModelCombo value={form.llmRepo} options={llmOptions} onChange={v => set('llmRepo', v)} modelStatus={modelStatus} onSelectModel={onSelectModel} downloads={downloads} modelStatusFor={modelStatusFor} placeholder="HuggingFace repo ID" /></div>
               </>
             )}
