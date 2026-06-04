@@ -63,7 +63,7 @@ html, body {
   background: rgba(255,255,255,0.04);
   border: 0.5px solid rgba(255,255,255,0.07);
   border-radius: 12px;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .glass-card-content {
@@ -284,18 +284,15 @@ textarea:focus { border-color: rgba(48,209,88,0.4); }
 
 /* ── Dropdown ────────────────────────────────────────────── */
 .model-select-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 100;
+  position: fixed;
+  z-index: 1000;
   background: rgb(20, 20, 24);
   border: 0.5px solid rgba(255,255,255,0.10);
   border-radius: 10px;
   padding: 4px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  min-width: 180px;
 }
-
 .model-select-option {
   display: flex;
   align-items: center;

@@ -276,7 +276,9 @@ export function Settings() {
     if (dl) return dl
     const g = modelStatus?.[group]
     if (!g) return null
-    return { kind: g.cached ? 'ready' : 'missing', pct: 0 }
+    const entry = g[val]
+    if (entry === undefined) return null
+    return { kind: entry.cached ? 'ready' : 'missing', pct: 0 }
   }
 
   function onSelectModel(val, group) {
