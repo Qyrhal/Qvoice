@@ -77,7 +77,8 @@ const KBD_KEYS = [
   { val: 'left-control',  symbol: '⌃', sub: 'L' },
   { val: 'right-control', symbol: '⌃', sub: 'R' },
   { val: 'command',       symbol: '⌘', sub: null },
-  { val: 'option',        symbol: '⌥', sub: null },
+  { val: 'left-option',   symbol: '⌥', sub: 'L' },
+  { val: 'right-option',  symbol: '⌥', sub: 'R' },
   { val: 'left-shift',    symbol: '⇧', sub: 'L' },
   { val: 'right-shift',   symbol: '⇧', sub: 'R' },
 ]
@@ -88,7 +89,7 @@ function KbdPicker({ value, onChange }) {
       {KBD_KEYS.map(({ val, symbol, sub }) => (
         <button
           key={val}
-          className={`kbd-key ${value === val || (val === 'left-control' && value === 'control') ? 'active' : ''}`}
+          className={`kbd-key ${value === val ? 'active' : ''}`}
           onClick={() => onChange(val)}
         >
           <span className="kbd-symbol">{symbol}</span>
@@ -298,7 +299,7 @@ export function Settings() {
   const isParakeet = form.engine === 'parakeet'
   const hotkeyKeyName = {
     control: 'Control', 'left-control': 'Left ⌃', 'right-control': 'Right ⌃',
-    command: 'Command', option: 'Option',
+    command: 'Command', option: 'Option', 'left-option': 'Left ⌥', 'right-option': 'Right ⌥',
     shift: 'Shift', 'left-shift': 'Left ⇧', 'right-shift': 'Right ⇧',
   }[form.hotkeyKey] || 'Control'
 
