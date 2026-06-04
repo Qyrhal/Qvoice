@@ -34,9 +34,19 @@
       "node_modules/uiohook-napi/**",
       ".venv/**"
     ],
+    "icon": "assets/icon.icns",
     "mac": {
       "category": "public.app-category.utilities",
-      "target": [{ "target": "dir", "arch": ["arm64"] }]
+      "icon": "assets/icon.icns",
+      "target": [{ "target": "dmg", "arch": ["arm64"] }]
+    },
+    "dmg": {
+      "title": "Qvoice",
+      "contents": [
+        { "x": 130, "y": 220, "type": "file" },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ],
+      "window": { "width": 540, "height": 380 }
     },
     "files": [
       "main.js",

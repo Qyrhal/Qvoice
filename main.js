@@ -481,7 +481,6 @@ function setupHotkey() {
       else if (isPreviewing) doPaste(previewText)
       else startRecording()
     })
-    console.log('Fallback: Ctrl+Shift+R to toggle')
   }
 }
 
