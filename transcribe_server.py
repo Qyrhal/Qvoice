@@ -11,10 +11,10 @@ import os
 import wave
 import numpy as np
 
-ENGINE         = os.environ.get("QVOICE_ENGINE", "whisper")
+ENGINE         = os.environ.get("QVOICE_ENGINE", "parakeet")
 WHISPER_MODEL  = os.environ.get("QVOICE_MODEL", "base.en")
 LLM_REPO       = os.environ.get("QVOICE_LLM_REPO", "LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit")
-PARAKEET_MODEL = os.environ.get("QVOICE_PARAKEET_MODEL", "mlx-community/parakeet-tdt-0.6b-v3")
+PARAKEET_MODEL = os.environ.get("QVOICE_PARAKEET_MODEL", "mlx-community/parakeet-tdt-0.6b-v2")
 
 DEFAULT_SYSTEM_PROMPT = (
     "You are a speech transcription corrector. "

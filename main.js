@@ -25,22 +25,28 @@ let serverBuffer = ''
 let pendingQueue = []  // array of { onProgress, resolve, reject }
 let isPreviewing = false
 let previewText = ''
-let previousAppPID = null  // PID of the frontmost process when recording started
+let previousAppPID = null
+let previousAppName = ''
 let recordingToken = null
 let correctionEnabled = true
 let settings = {}
+let uIOhookRef = null
+let uiohookKeydownHandler = null
+let uiohookKeyupHandler = null
 const serverEvents = new EventEmitter()
 
 // ─── Settings ─────────────────────────────────────────────────
 const DEFAULT_SETTINGS = {
-  engine: 'whisper',
+  engine: 'parakeet',
   whisperModel: 'base.en',
   llmRepo: 'LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit',
   systemPrompt: 'You are a speech transcription corrector. Fix grammar, punctuation, and misheard words in the user\'s text. Return ONLY the corrected text — no explanation, no quotes, nothing else.',
   autoPaste: true,
   correctionEnabled: true,
   beamSize: 5,
-  parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v3',
+  parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v2',
+  hotkeyKey: 'control',
+  hotkeyMode: 'double-tap',
 }
 
 function loadSettings() {
@@ -79,9 +85,9 @@ function createWindow() {
   const { workAreaSize } = screen.getPrimaryDisplay()
 
   win = new BrowserWindow({
-    width: 520,
-    height: 110,
-    x: Math.floor(workAreaSize.width / 2 - 260),
+    width: 300,
+    height: 46,
+    x: Math.floor(workAreaSize.width / 2 - 150),
     y: 56,
     frame: false,
     vibrancy: 'hud',
@@ -127,16 +133,16 @@ function createTray() {
 
   tray = new Tray(icon)
   tray.setTitle('Q')
-  tray.setToolTip('Qvoice — Double-tap Control to toggle recording')
+  tray.setToolTip(`Qvoice — ${hotkeyLabel()}`)
   updateTrayMenu()
 }
 
 function updateTrayMenu(state = 'idle') {
   const status = {
-    idle:      'Double-tap Control to record',
+    idle:      hotkeyLabel(),
     recording: '⏺ Recording...',
     loading:   '○ Loading models...',
-  }[state] || 'Double-tap Control to record'
+  }[state] || hotkeyLabel()
 
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Qvoice', enabled: false },
@@ -260,7 +266,7 @@ function doPaste(text) {
   clipboard.writeText(text)
   win?.webContents.send('preview-confirmed')
   win.hide()
-  win.setSize(520, 110)
+  win.setSize(300, 46)
 
   const pid = previousAppPID
   previousAppPID = null
@@ -294,13 +300,18 @@ async function startRecording() {
   const token = Symbol()
   recordingToken = token
 
-  // Capture frontmost process PID NOW — before our window appears — so doPaste can re-activate it
+  // Capture frontmost process PID + name before our window appears
   try {
-    previousAppPID = parseInt(execSync(
-      `osascript -e 'tell application "System Events" to unix id of first process whose frontmost is true'`,
-      { timeout: 1000 }
-    ).toString().trim(), 10) || null
-  } catch { previousAppPID = null }
+    const raw = spawnSync('osascript', ['-e', `
+      tell application "System Events"
+        set p to first process whose frontmost is true
+        ((unix id of p) as string) & "|" & (name of p)
+      end tell
+    `], { timeout: 1000, encoding: 'utf8' }).stdout?.trim() || ''
+    const sep = raw.indexOf('|')
+    previousAppPID  = parseInt(raw.slice(0, sep), 10) || null
+    previousAppName = raw.slice(sep + 1).trim()
+  } catch { previousAppPID = null; previousAppName = '' }
 
   win.showInactive()
   updateTrayMenu('recording')
@@ -317,7 +328,7 @@ async function startRecording() {
     return
   }
 
-  win.webContents.send('recording-start')
+  win.webContents.send('recording-start', { appName: previousAppName })
 }
 
 function stopRecording() {
@@ -328,33 +339,78 @@ function stopRecording() {
   win.webContents.send('recording-stop')
 }
 
-// ─── Global Hotkey (double-tap Control to toggle) ─────────────
-function setupHotkey() {
-  try {
-    const { uIOhook } = require('uiohook-napi')
+// ─── Global Hotkey ────────────────────────────────────────────
+const HOTKEY_KEYCODES = {
+  control: [29, 3613],
+  command: [3675, 3676],
+  option:  [56, 3608],
+  shift:   [42, 54],
+}
 
-    const CTRL_LEFT  = 29
-    const CTRL_RIGHT = 3613
+function hotkeyLabel() {
+  const keyName = { control: 'Control', command: 'Command', option: 'Option', shift: 'Shift' }[settings.hotkeyKey || 'control'] || 'Control'
+  return (settings.hotkeyMode || 'double-tap') === 'push-to-talk'
+    ? `Hold ${keyName} to record`
+    : `Double-tap ${keyName} to toggle`
+}
+
+function registerHotkeyHandlers() {
+  if (!uIOhookRef) return
+
+  if (uiohookKeydownHandler) uIOhookRef.off('keydown', uiohookKeydownHandler)
+  if (uiohookKeyupHandler)   uIOhookRef.off('keyup',   uiohookKeyupHandler)
+  uiohookKeyupHandler = null
+
+  const keycodes = HOTKEY_KEYCODES[settings.hotkeyKey || 'control'] || HOTKEY_KEYCODES.control
+  const mode     = settings.hotkeyMode || 'double-tap'
+
+  if (mode === 'push-to-talk') {
+    let ptActive = false
+
+    uiohookKeydownHandler = ({ keycode }) => {
+      if (!keycodes.includes(keycode) || ptActive) return
+      ptActive = true
+      if (isPreviewing) doPaste(previewText)
+      else startRecording()
+    }
+
+    uiohookKeyupHandler = ({ keycode }) => {
+      if (!keycodes.includes(keycode)) return
+      ptActive = false
+      if (isRecording) stopRecording()
+    }
+
+    uIOhookRef.on('keydown', uiohookKeydownHandler)
+    uIOhookRef.on('keyup',   uiohookKeyupHandler)
+  } else {
     const DOUBLE_TAP_MS = 350
+    let lastTapTime = 0
 
-    let lastCtrlTime = 0
-
-    uIOhook.on('keydown', ({ keycode }) => {
-      if (keycode !== CTRL_LEFT && keycode !== CTRL_RIGHT) return
-
+    uiohookKeydownHandler = ({ keycode }) => {
+      if (!keycodes.includes(keycode)) return
       const now = Date.now()
-      if (now - lastCtrlTime < DOUBLE_TAP_MS) {
-        lastCtrlTime = 0  // reset so triple-tap doesn't re-fire
+      if (now - lastTapTime < DOUBLE_TAP_MS) {
+        lastTapTime = 0
         if (isRecording) stopRecording()
         else if (isPreviewing) doPaste(previewText)
         else startRecording()
       } else {
-        lastCtrlTime = now
+        lastTapTime = now
       }
-    })
+    }
 
+    uIOhookRef.on('keydown', uiohookKeydownHandler)
+  }
+
+  console.log(hotkeyLabel())
+}
+
+function setupHotkey() {
+  try {
+    const { uIOhook } = require('uiohook-napi')
+    uIOhookRef = uIOhook
+    registerHotkeyHandlers()
     uIOhook.start()
-    console.log('Double-tap Control to toggle recording')
   } catch (e) {
     console.warn('uiohook unavailable, falling back to Ctrl+Shift+R:', e.message)
     globalShortcut.register('Ctrl+Shift+R', () => {
@@ -400,14 +456,14 @@ ipcMain.on('confirm-paste', (_, { text }) => {
 })
 
 ipcMain.on('set-height', (_, h) => {
-  win.setSize(520, Math.max(80, Math.min(h, 400)))
+  win.setSize(300, Math.max(46, Math.min(h, 400)))
 })
 
 ipcMain.on('hide-window', () => {
   isPreviewing = false
   previewText = ''
   win.hide()
-  win.setSize(520, 110)
+  win.setSize(300, 46)
 })
 
 // ─── Settings Window ──────────────────────────────────────────
@@ -446,11 +502,17 @@ ipcMain.handle('save-settings', (_, newSettings) => {
     newSettings.llmRepo       !== settings.llmRepo       ||
     newSettings.parakeetModel !== settings.parakeetModel
 
+  const needsHotkeyUpdate =
+    newSettings.hotkeyKey  !== settings.hotkeyKey  ||
+    newSettings.hotkeyMode !== settings.hotkeyMode
+
   settings = { ...settings, ...newSettings }
   correctionEnabled = settings.correctionEnabled
   saveSettingsToDisk(settings)
   win?.webContents.send('settings-update', { autoPaste: settings.autoPaste })
   updateTrayMenu()
+  if (tray) tray.setToolTip(`Qvoice — ${hotkeyLabel()}`)
 
   if (needsRestart) restartTranscribeServer()
+  if (needsHotkeyUpdate) registerHotkeyHandlers()
 })

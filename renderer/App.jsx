@@ -2,19 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { LiquidCanvas, GlassContainer, Glass, Frame } from '@liquid-dom/react'
 import './App.css'
 
-// ─── State machine ─────────────────────────────────────────────
-const PHASES = {
-  idle:        { label: null,             dot: '' },
-  loading:     { label: 'Loading model',  dot: 'dot-idle' },
-  recording:   { label: 'Recording',      dot: 'dot-record' },
-  transcribing:{ label: 'Transcribing',   dot: 'dot-process' },
-  correcting:  { label: 'Correcting',     dot: 'dot-correct' },
-  preview:     { label: 'Ready',          dot: 'dot-done' },
-  result:      { label: 'Pasted',         dot: 'dot-done' },
-}
-
 const PARTIAL_INTERVAL_MS = 2000
-const MIN_PARTIAL_SAMPLES = 16000 // 1 second of audio before first partial
+const MIN_PARTIAL_SAMPLES = 16000
 
 // ─── WAV Recorder ──────────────────────────────────────────────
 class WavRecorder {
@@ -49,7 +38,6 @@ class WavRecorder {
     return this.analyser
   }
 
-  // Returns WAV of all audio recorded so far without stopping the recorder
   snapshot() {
     if (this.chunks.length === 0) return null
     const total = this.chunks.reduce((n, c) => n + c.length, 0)
@@ -68,150 +56,149 @@ class WavRecorder {
     const total = this.chunks.reduce((n, c) => n + c.length, 0)
     const pcm = new Float32Array(total)
     let offset = 0
-    for (const c of this.chunks) {
-      pcm.set(c, offset)
-      offset += c.length
-    }
+    for (const c of this.chunks) { pcm.set(c, offset); offset += c.length }
     return this._toWav(pcm, this.RATE)
   }
 
   _toWav(samples, rate) {
     const buf = new ArrayBuffer(44 + samples.length * 2)
     const v = new DataView(buf)
-    const str = (o, s) => {
-      for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i))
-    }
+    const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)) }
 
-    str(0, 'RIFF')
-    v.setUint32(4, 36 + samples.length * 2, true)
-    str(8, 'WAVE')
-    str(12, 'fmt ')
-    v.setUint32(16, 16, true)
-    v.setUint16(20, 1, true)
-    v.setUint16(22, 1, true)
-    v.setUint32(24, rate, true)
-    v.setUint32(28, rate * 2, true)
-    v.setUint16(32, 2, true)
-    v.setUint16(34, 16, true)
-    str(36, 'data')
-    v.setUint32(40, samples.length * 2, true)
+    str(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true)
+    str(8, 'WAVE'); str(12, 'fmt ')
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true)
+    v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true)
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true)
+    str(36, 'data'); v.setUint32(40, samples.length * 2, true)
 
     let off = 44
     for (const s of samples) {
-      const clamped = Math.max(-1, Math.min(1, s))
-      v.setInt16(off, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true)
+      const c = Math.max(-1, Math.min(1, s))
+      v.setInt16(off, c < 0 ? c * 0x8000 : c * 0x7fff, true)
       off += 2
     }
     return buf
   }
 }
 
-// ─── Waveform Bars ─────────────────────────────────────────────
-const NUM_BARS = 13
+// ─── Signal Bars ───────────────────────────────────────────────
+const BAR_HEIGHTS = [4, 7, 11, 15]
 
-function Waveform({ analyser }) {
+function SignalBars({ analyser }) {
   const barRefs = useRef([])
 
   useEffect(() => {
     if (!analyser) return
-
     const data = new Uint8Array(analyser.frequencyBinCount)
-    const step = Math.floor(data.length / NUM_BARS)
     let frame = null
-
-    barRefs.current.forEach(el => el?.classList.remove('idle'))
 
     function tick() {
       frame = requestAnimationFrame(tick)
       analyser.getByteFrequencyData(data)
-      const half = Math.floor(NUM_BARS / 2)
-      const heights = []
-      for (let i = 0; i <= half; i++) {
-        let sum = 0
-        for (let j = 0; j < step; j++) sum += data[i * step + j]
-        const avg = sum / step
-        heights[i] = Math.max(3, Math.min(34, (avg / 255) * 38 + 3))
-      }
-      for (let i = 0; i < NUM_BARS; i++) {
-        const idx = i <= half ? half - i : i - half
-        const el = barRefs.current[i]
-        if (el) el.style.height = `${heights[idx]}px`
-      }
+      let sum = 0
+      const count = Math.min(24, data.length)
+      for (let i = 0; i < count; i++) sum += data[i]
+      const vol = sum / (count * 255)
+
+      barRefs.current.forEach((el, i) => {
+        if (!el) return
+        el.style.height = `${BAR_HEIGHTS[i] + vol * 7}px`
+        el.style.opacity = `${0.35 + vol * 0.65}`
+      })
     }
     tick()
 
-    return () => {
-      if (frame) cancelAnimationFrame(frame)
-      barRefs.current.forEach(el => el?.classList.add('idle'))
-    }
+    return () => { if (frame) cancelAnimationFrame(frame) }
   }, [analyser])
 
   return (
-    <div className="waveform">
-      {Array.from({ length: NUM_BARS }, (_, i) => (
-        <div
-          key={i}
-          className="bar idle"
-          ref={(el) => (barRefs.current[i] = el)}
-        />
+    <div className="signal-bars">
+      {BAR_HEIGHTS.map((h, i) => (
+        <div key={i} ref={el => barRefs.current[i] = el} className="signal-bar" style={{ height: `${h}px` }} />
       ))}
     </div>
   )
 }
 
-// ─── Loading Dots ──────────────────────────────────────────────
-function LoadingDots() {
+// ─── Pill Spinner ──────────────────────────────────────────────
+function PillSpinner() {
   return (
-    <div className="dots">
-      <span />
-      <span />
-      <span />
+    <div className="pill-spinner">
+      <span /><span /><span />
     </div>
   )
 }
 
-// ─── Status Row ────────────────────────────────────────────────
-function StatusRow({ phase }) {
-  if (!phase.label) return null
-  return (
-    <div className="status-row">
-      <div className={`dot ${phase.dot}`} />
-      <span className="status-label">{phase.label}</span>
-    </div>
-  )
+// ─── Timer ────────────────────────────────────────────────────
+function formatTime(s) {
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 }
 
-// ─── State Content ─────────────────────────────────────────────
-function StateContent({ state, analyser, resultText, liveText, onPaste, onDismiss }) {
-  switch (state) {
-    case 'loading':
-      return <LoadingDots />
-    case 'recording':
-      return (
-        <>
-          <Waveform analyser={analyser} />
-          {liveText && <div className="live-text">{liveText}</div>}
-        </>
-      )
-    case 'transcribing':
-      return <LoadingDots />
-    case 'correcting':
-      return <div className="result-text">{resultText}</div>
-    case 'preview':
-      return (
-        <>
-          <div className="result-text">{resultText}</div>
-          <div className="preview-actions">
-            <button className="preview-btn preview-btn-dismiss" onClick={onDismiss}>Dismiss</button>
-            <button className="preview-btn preview-btn-paste" onClick={onPaste}>Paste</button>
-          </div>
-        </>
-      )
-    case 'result':
-      return <div className="result-text">{resultText}</div>
-    default:
-      return null
+// ─── Pill Content ─────────────────────────────────────────────
+function PillContent({ state, analyser, elapsed, appName, liveText, resultText, onPaste, onDismiss }) {
+  if (state === 'loading') {
+    return (
+      <div className="pill-row">
+        <PillSpinner />
+        <span className="pill-label">Loading model</span>
+      </div>
+    )
   }
+  if (state === 'recording') {
+    return (
+      <>
+        <div className="pill-row">
+          <SignalBars analyser={analyser} />
+          <div className="rec-dot" />
+          <span className="rec-timer">{formatTime(elapsed)}</span>
+          {appName && (
+            <>
+              <span className="rec-arrow">→</span>
+              <span className="rec-app">{appName}</span>
+            </>
+          )}
+        </div>
+        {liveText && <div className="live-text">{liveText}</div>}
+      </>
+    )
+  }
+  if (state === 'transcribing') {
+    return (
+      <div className="pill-row">
+        <PillSpinner />
+        <span className="pill-label">Transcribing</span>
+      </div>
+    )
+  }
+  if (state === 'correcting') {
+    return (
+      <div className="pill-row">
+        <PillSpinner />
+        <span className="pill-label">Correcting</span>
+      </div>
+    )
+  }
+  if (state === 'preview') {
+    return (
+      <div className="pill-expand">
+        <p className="result-text">{resultText}</p>
+        <div className="preview-actions">
+          <button className="preview-btn preview-btn-dismiss" onClick={onDismiss}>Dismiss</button>
+          <button className="preview-btn preview-btn-paste" onClick={onPaste}>Paste</button>
+        </div>
+      </div>
+    )
+  }
+  if (state === 'result') {
+    return (
+      <div className="pill-row">
+        <div className="done-dot" />
+        <span className="pill-label">Pasted</span>
+      </div>
+    )
+  }
+  return null
 }
 
 // ─── Glass Shape ───────────────────────────────────────────────
@@ -224,9 +211,8 @@ function GlassShape() {
     if (!el) return
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect
-      if (width > 0 && height > 0 && width < 8192 && height < 8192) {
+      if (width > 0 && height > 0 && width < 8192 && height < 8192)
         setProposal({ width, height })
-      }
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -262,7 +248,7 @@ function GlassShape() {
               shadowBlur={0}
             >
               <Frame maxWidth={Infinity} maxHeight={Infinity}>
-                <Glass cornerRadius={18} />
+                <Glass cornerRadius={22} />
               </Frame>
             </GlassContainer>
           </Frame>
@@ -272,38 +258,48 @@ function GlassShape() {
   )
 }
 
+// ─── App ──────────────────────────────────────────────────────
 export function App() {
   const [state, setState] = useState('idle')
   const [resultText, setResultText] = useState('')
-  const [liveText, setLiveText] = useState('')
   const [visible, setVisible] = useState(false)
   const [animating, setAnimating] = useState(false)
   const [analyser, setAnalyser] = useState(null)
+  const [elapsed, setElapsed] = useState(0)
+  const [appName, setAppName] = useState('')
+  const [liveText, setLiveText] = useState('')
+
   const recorderRef = useRef(null)
   const stateRef = useRef(state)
   const overlayRef = useRef(null)
   const partialTimerRef = useRef(null)
   const partialInFlightRef = useRef(false)
+  const elapsedTimerRef = useRef(null)
   const autoPasteRef = useRef(true)
   stateRef.current = state
 
-  function showPanel() {
-    setVisible(true)
-    setAnimating(true)
-  }
+  function showPanel() { setVisible(true); setAnimating(true) }
 
   function hidePanel() {
     setAnimating(false)
     setVisible(false)
     setLiveText('')
+    stopElapsedTimer()
     window.qvoice.hideWindow()
   }
 
+  function startElapsedTimer() {
+    setElapsed(0)
+    elapsedTimerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
+  }
+
+  function stopElapsedTimer() {
+    if (elapsedTimerRef.current) { clearInterval(elapsedTimerRef.current); elapsedTimerRef.current = null }
+    setElapsed(0)
+  }
+
   function stopPartialTimer() {
-    if (partialTimerRef.current) {
-      clearInterval(partialTimerRef.current)
-      partialTimerRef.current = null
-    }
+    if (partialTimerRef.current) { clearInterval(partialTimerRef.current); partialTimerRef.current = null }
     partialInFlightRef.current = false
   }
 
@@ -315,36 +311,26 @@ export function App() {
       if (!snap) return
       partialInFlightRef.current = true
       try {
-        const result = await window.qvoice.transcribePartial(snap)
-        if (result?.text?.trim()) setLiveText(result.text.trim())
+        const res = await window.qvoice.transcribePartial(snap)
+        if (res?.text?.trim()) setLiveText(res.text.trim())
       } catch {}
       partialInFlightRef.current = false
     }, PARTIAL_INTERVAL_MS)
   }
 
-  // IPC listeners
   useEffect(() => {
     const qv = window.qvoice
 
-    qv.onSettingsUpdate((s) => {
-      if (s.autoPaste !== undefined) autoPasteRef.current = s.autoPaste
-    })
-
+    qv.onSettingsUpdate((s) => { if (s.autoPaste !== undefined) autoPasteRef.current = s.autoPaste })
     qv.onPreviewConfirmed(() => hidePanel())
+    qv.onServerReady(() => { if (stateRef.current === 'loading') hidePanel() })
+    qv.onShowLoading(() => { setState('loading'); showPanel() })
 
-    qv.onServerReady(() => {
-      if (stateRef.current === 'loading') hidePanel()
-    })
-
-    qv.onShowLoading(() => {
-      setState('loading')
-      showPanel()
-    })
-
-    qv.onRecordingStart(async () => {
+    qv.onRecordingStart(async (data) => {
+      setAppName(data?.appName || '')
       setState('recording')
-      setLiveText('')
       showPanel()
+      startElapsedTimer()
       recorderRef.current = new WavRecorder()
       try {
         const node = await recorderRef.current.start()
@@ -358,6 +344,8 @@ export function App() {
 
     qv.onRecordingStop(async () => {
       stopPartialTimer()
+      stopElapsedTimer()
+      setLiveText('')
       setState('transcribing')
       const recorder = recorderRef.current
       recorderRef.current = null
@@ -365,37 +353,18 @@ export function App() {
       if (!recorder) return
 
       let wavBuf
-      try {
-        wavBuf = recorder.stop()
-      } catch (err) {
-        console.error('Recorder error:', err)
-        hidePanel()
-        return
-      }
+      try { wavBuf = recorder.stop() } catch (err) { console.error('Recorder error:', err); hidePanel(); return }
 
       let result
-      try {
-        result = await qv.transcribeAudio(wavBuf)
-      } catch (err) {
-        console.error('Transcription error:', err)
-        hidePanel()
-        return
-      }
+      try { result = await qv.transcribeAudio(wavBuf) } catch (err) { console.error('Transcription error:', err); hidePanel(); return }
 
-      if (!result || result.status !== 'ok' || !result.text?.trim()) {
-        hidePanel()
-        return
-      }
+      if (!result || result.status !== 'ok' || !result.text?.trim()) { hidePanel(); return }
 
       const text = result.text.trim()
       setResultText(text)
-      setLiveText('')
       if (autoPasteRef.current) {
         setState('result')
-        setTimeout(() => {
-          setAnimating(false)
-          qv.resultReady(text)
-        }, 180)
+        setTimeout(() => { setAnimating(false); qv.resultReady(text) }, 300)
       } else {
         setState('preview')
         qv.previewReady(text)
@@ -403,37 +372,30 @@ export function App() {
     })
 
     qv.onTranscriptionProgress((data) => {
-      if (data.status === 'transcribed') {
-        setResultText(data.text)
-        setState('correcting')
-      }
+      if (data.status === 'transcribed') setState('correcting')
     })
   }, [])
 
-  // Sync window height to content
   useEffect(() => {
     if (visible && overlayRef.current) {
       const panel = overlayRef.current.parentElement
-      if (panel) {
-        const h = panel.getBoundingClientRect().height
-        window.qvoice.setHeight(Math.round(h))
-      }
+      if (panel) window.qvoice.setHeight(Math.round(panel.getBoundingClientRect().height))
     }
   }, [visible, state, resultText, liveText])
 
   if (!visible) return null
 
-  const phase = PHASES[state]
-
   return (
     <div className={`glass-panel ${animating ? 'entering' : 'exiting'}`}>
+      <GlassShape />
       <div ref={overlayRef} className="glass-overlay">
-        <StatusRow phase={phase} />
-        <StateContent
+        <PillContent
           state={state}
           analyser={analyser}
-          resultText={resultText}
+          elapsed={elapsed}
+          appName={appName}
           liveText={liveText}
+          resultText={resultText}
           onPaste={() => window.qvoice.confirmPaste(resultText)}
           onDismiss={hidePanel}
         />

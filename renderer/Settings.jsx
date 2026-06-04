@@ -97,9 +97,11 @@ export function Settings() {
     llmRepo: '',
     systemPrompt: '',
     beamSize: 5,
-    parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v3',
+    parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v2',
     correctionEnabled: true,
     autoPaste: true,
+    hotkeyKey: 'control',
+    hotkeyMode: 'double-tap',
   })
   const [saved, setSaved] = useState(false)
 
@@ -124,6 +126,7 @@ export function Settings() {
   }
 
   const isParakeet = form.engine === 'parakeet'
+  const hotkeyKeyName = { control: 'Control', command: 'Command', option: 'Option', shift: 'Shift' }[form.hotkeyKey] || 'Control'
 
   return (
     <>
@@ -171,46 +174,88 @@ export function Settings() {
               </>
             )}
             {isParakeet && (
-              <div className="row">
-                <span className="label">Parakeet Model</span>
-                <select value={form.parakeetModel} onChange={e => set('parakeetModel', e.target.value)}>
-                  <option value="mlx-community/parakeet-tdt-0.6b-v3">0.6B v3 — Fast</option>
-                  <option value="mlx-community/parakeet-tdt-1.1b-v2">1.1B v2 — Accurate</option>
-                </select>
-              </div>
+              <>
+                <div className="row">
+                  <span className="label">Parakeet Model</span>
+                  <select value={form.parakeetModel} onChange={e => set('parakeetModel', e.target.value)}>
+                    <option value="mlx-community/parakeet-tdt-0.6b-v3">0.6B v3 — Latest</option>
+                    <option value="mlx-community/parakeet-tdt-0.6b-v2">0.6B v2</option>
+                  </select>
+                </div>
+                <div className="row">
+                  <span className="label">LLM Repo</span>
+                  <input type="text" value={form.llmRepo} onChange={e => set('llmRepo', e.target.value)} placeholder="HuggingFace repo ID" />
+                </div>
+              </>
             )}
           </GlassCard>
           <div className="note">Model changes restart the AI server</div>
         </div>
 
-        {/* Transcription (whisper only) */}
-        {!isParakeet && (
-          <div className="section">
-            <div className="section-title">Transcription</div>
-            <GlassCard>
-              <div className="row">
-                <span className="label">AI Correction</span>
-                <Toggle on={form.correctionEnabled} onClick={() => set('correctionEnabled', !form.correctionEnabled)} />
-              </div>
+        {/* Transcription */}
+        <div className="section">
+          <div className="section-title">Transcription</div>
+          <GlassCard>
+            <div className="row">
+              <span className="label">AI Correction</span>
+              <Toggle on={form.correctionEnabled} onClick={() => set('correctionEnabled', !form.correctionEnabled)} />
+            </div>
+            {!isParakeet && (
               <div className="row">
                 <span className="label">Beam Size</span>
                 <input type="number" value={form.beamSize} min="1" max="10" onChange={e => set('beamSize', e.target.value)} />
               </div>
-            </GlassCard>
-          </div>
-        )}
+            )}
+          </GlassCard>
+        </div>
 
-        {/* System Prompt (whisper only) */}
-        {!isParakeet && (
-          <div className="section">
-            <div className="section-title">System Prompt</div>
-            <textarea
-              value={form.systemPrompt}
-              onChange={e => set('systemPrompt', e.target.value)}
-              placeholder="Instructions for the AI correction model…"
-            />
-          </div>
-        )}
+        {/* System Prompt */}
+        <div className="section">
+          <div className="section-title">System Prompt</div>
+          <textarea
+            value={form.systemPrompt}
+            onChange={e => set('systemPrompt', e.target.value)}
+            placeholder="Instructions for the AI correction model…"
+          />
+        </div>
+
+        {/* Hotkey */}
+        <div className="section">
+          <div className="section-title">Hotkey</div>
+          <GlassCard>
+            <div className="row">
+              <span className="label">Key</span>
+              <SegControl
+                value={form.hotkeyKey}
+                options={[
+                  { val: 'control', label: 'Control' },
+                  { val: 'command', label: 'Command' },
+                  { val: 'option',  label: 'Option'  },
+                  { val: 'shift',   label: 'Shift'   },
+                ]}
+                onChange={v => set('hotkeyKey', v)}
+              />
+            </div>
+            <div className="row">
+              <span className="label">
+                Mode
+                <div className="label-sub">
+                  {form.hotkeyMode === 'push-to-talk'
+                    ? `Hold ${hotkeyKeyName} to record`
+                    : `Double-tap ${hotkeyKeyName} to toggle`}
+                </div>
+              </span>
+              <SegControl
+                value={form.hotkeyMode}
+                options={[
+                  { val: 'double-tap',   label: 'Double-tap' },
+                  { val: 'push-to-talk', label: 'Hold key'   },
+                ]}
+                onChange={v => set('hotkeyMode', v)}
+              />
+            </div>
+          </GlassCard>
+        </div>
 
         {/* Behavior */}
         <div className="section">

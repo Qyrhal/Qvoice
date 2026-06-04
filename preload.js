@@ -4,7 +4,7 @@ contextBridge.exposeInMainWorld('qvoice', {
   onSettingsUpdate:       (cb) => ipcRenderer.on('settings-update',        (_, s) => cb(s)),
   onServerReady:          (cb) => ipcRenderer.on('server-ready',           () => cb()),
   onShowLoading:          (cb) => ipcRenderer.on('show-loading',           () => cb()),
-  onRecordingStart:       (cb) => ipcRenderer.on('recording-start',        () => cb()),
+  onRecordingStart:       (cb) => ipcRenderer.on('recording-start',        (_, d) => cb(d)),
   onRecordingStop:        (cb) => ipcRenderer.on('recording-stop',         () => cb()),
   onTranscriptionProgress:(cb) => ipcRenderer.on('transcription-progress', (_, d) => cb(d)),
   onPreviewConfirmed:     (cb) => ipcRenderer.on('preview-confirmed',      () => cb()),
