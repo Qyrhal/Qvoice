@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { LiquidCanvas, GlassContainer, Glass, Frame } from "@liquid-dom/react";
 import "./App.css";
 
 const PARTIAL_INTERVAL_MS = 2000;
@@ -246,67 +245,6 @@ function PillContent({
   return null;
 }
 
-// ─── Glass Shape ───────────────────────────────────────────────
-function GlassShape() {
-  const hostRef = useRef(null);
-  const [proposal, setProposal] = useState(null);
-
-  useEffect(() => {
-    const el = hostRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      if (width > 0 && height > 0 && width < 8192 && height < 8192)
-        setProposal({ width, height });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  return (
-    <div ref={hostRef} className="glass-canvas-layer">
-      {proposal && (
-        <LiquidCanvas
-          style={{ width: "100%", height: "100%", display: "block" }}
-          canvasStyle={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: `${proposal.width}px`,
-            height: `${proposal.height}px`,
-            mixBlendMode: "screen",
-          }}
-          proposal={proposal}
-          maxDpr={Math.min(window.devicePixelRatio || 1, 2)}
-          frameloop="demand"
-          onError={(err) => console.error("LiquidCanvas error:", err)}
-        >
-          <Frame maxWidth={Infinity} maxHeight={Infinity}>
-            <GlassContainer
-              blur={6}
-              tint={{ r: 0.2, g: 0.2, b: 0.2, a: 0.2 }}
-              specularStrength={0.6}
-              specularWidth={0.4}
-              specularFalloff={1.6}
-              specularOpacity={0.15}
-              thickness={20}
-              bezelWidth={0}
-              shadowColor={{ r: 0, g: 0, b: 0, a: 0 }}
-              shadowOffsetX={0}
-              shadowOffsetY={0}
-              shadowBlur={0}
-            >
-              <Frame maxWidth={Infinity} maxHeight={Infinity}>
-                <Glass cornerRadius={22} />
-              </Frame>
-            </GlassContainer>
-          </Frame>
-        </LiquidCanvas>
-      )}
-    </div>
-  );
-}
-
 // ─── App ──────────────────────────────────────────────────────
 export function App() {
   const [state, setState] = useState("idle");
@@ -473,8 +411,6 @@ export function App() {
 
   return (
     <div className={`glass-panel ${animating ? "entering" : "exiting"}`}>
-      <div className="glass-backdrop" />
-      <GlassShape />
       <div ref={overlayRef} className="glass-overlay">
         <PillContent
           state={state}

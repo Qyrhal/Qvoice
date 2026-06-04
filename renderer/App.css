@@ -2,13 +2,10 @@
 .glass-panel {
   position: relative;
   border-radius: 22px;
-  overflow: hidden;
   -webkit-app-region: drag;
   will-change: transform, opacity;
   background: transparent;
-  box-shadow:
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
-    0 8px 32px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
 }
 
 .glass-panel.entering {
@@ -29,27 +26,9 @@
   to   { opacity: 0; transform: translateY(-4px) scale(0.97); }
 }
 
-/* ── Backdrop (dark surface for glass to blend against) ──── */
-.glass-backdrop {
-  position: absolute;
-  inset: 0;
-  border-radius: 22px;
-  background: rgba(24, 24, 28, 0.62);
-  z-index: 0;
-}
-
-/* ── Canvas Layer ────────────────────────────────────────────── */
-.glass-canvas-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
 /* ── DOM Overlay ─────────────────────────────────────────────── */
 .glass-overlay {
   position: relative;
-  z-index: 2;
   pointer-events: auto;
   color: rgba(255, 255, 255, 0.9);
 }
