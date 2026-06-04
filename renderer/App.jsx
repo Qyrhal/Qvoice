@@ -284,7 +284,7 @@ function GlassShape() {
           <Frame maxWidth={Infinity} maxHeight={Infinity}>
             <GlassContainer
               blur={6}
-              tint={{ r: 0, g: 0, b: 0, a: 0 }}
+              tint={{ r: 0.2, g: 0.2, b: 0.2, a: 0.2 }}
               specularStrength={0.6}
               specularWidth={0.4}
               specularFalloff={1.6}
@@ -473,6 +473,7 @@ export function App() {
 
   return (
     <div className={`glass-panel ${animating ? "entering" : "exiting"}`}>
+      <div className="glass-backdrop" />
       <GlassShape />
       <div ref={overlayRef} className="glass-overlay">
         <PillContent
