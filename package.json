@@ -7,7 +7,9 @@
     "dev": "vite build --config vite.config.js && electron .",
     "build": "vite build --config vite.config.js",
     "start": "vite build --config vite.config.js && electron .",
-    "dist": "npm run build && electron-builder --mac --dir",
+    "dist": "npm run build && electron-builder --mac --dir && npm run repair-venv",
+    "repair-venv": "cp -n \"/Users/avi/.local/share/uv/python/cpython-3.12.0-macos-aarch64-none/lib/libpython3.12.dylib\" \"dist/mac-arm64/Qvoice.app/Contents/Resources/app/.venv/lib/libpython3.12.dylib\" 2>/dev/null; echo \"venv-repaired\"",
+    "check-models": ".venv/bin/python check_models.py",
     "setup": "bash setup.sh"
   },
   "dependencies": {

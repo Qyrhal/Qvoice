@@ -495,6 +495,70 @@ function openSettingsWindow() {
 
 ipcMain.handle('get-settings', () => ({ ...settings }))
 
+ipcMain.handle('check-models', async () => {
+  const script = path.join(__dirname, 'check_models.py')
+  if (!fs.existsSync(script)) return { ok: false, error: 'check_models.py not found' }
+  const python = getPython()
+  const env = {
+    ...process.env,
+    PYTHONPATH: path.join(__dirname, '.venv', 'lib', 'python3.12', 'site-packages'),
+  }
+  return new Promise(resolve => {
+    const proc = spawn(python, [script, '--json'], { env, timeout: 120_000 })
+    let stdout = ''
+    let stderr = ''
+    proc.stdout.on('data', d => stdout += d.toString())
+    proc.stderr.on('data', d => stderr += d.toString())
+    proc.on('close', () => {
+      const jsonStart = stdout.indexOf('{')
+      if (jsonStart >= 0) {
+        try { return resolve(JSON.parse(stdout.slice(jsonStart))) }
+        catch { /* fall through */ }
+      }
+      resolve({ ok: false, error: (stderr || stdout).trim() })
+    })
+    proc.on('error', e => resolve({ ok: false, error: e.message }))
+  })
+})
+
+ipcMain.on('download-model', (_, { repo, modelKey }) => {
+  const script = path.join(__dirname, 'download_model.py')
+  if (!fs.existsSync(script)) {
+    settingsWin?.webContents.send('download-progress', { repo, type: 'error', error: 'download_model.py not found' })
+    return
+  }
+  const python = getPython()
+  const env = {
+    ...process.env,
+    PYTHONPATH: path.join(__dirname, '.venv', 'lib', 'python3.12', 'site-packages'),
+  }
+  const proc = spawn(python, [script, repo, modelKey], { env })
+  let buf = ''
+  let finished = false
+
+  proc.stdout.on('data', d => {
+    buf += d.toString()
+    const lines = buf.split('\n')
+    buf = lines.pop()
+    for (const line of lines) {
+      if (!line.trim()) continue
+      try {
+        const msg = JSON.parse(line)
+        if (msg.type === 'done' || msg.type === 'error') finished = true
+        settingsWin?.webContents.send('download-progress', { repo, ...msg })
+      } catch {}
+    }
+  })
+
+  proc.on('close', () => {
+    if (!finished) settingsWin?.webContents.send('download-progress', { repo, type: 'done' })
+  })
+
+  proc.on('error', e => {
+    settingsWin?.webContents.send('download-progress', { repo, type: 'error', error: e.message })
+  })
+})
+
 ipcMain.handle('save-settings', (_, newSettings) => {
   const needsRestart =
     newSettings.engine        !== settings.engine        ||

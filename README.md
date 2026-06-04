@@ -42,6 +42,28 @@ npm start
 
 The setup script creates a Python 3.12 venv and installs all dependencies. On **first launch**, models are downloaded and cached automatically.
 
+
+## Building the .app
+
+```bash
+npm run dist
+# → dist/mac-arm64/Qvoice.app/
+```
+
+This builds the frontend, bundles Electron, copies the Python venv, and patches the Python binary's library path so it works inside the `.app` bundle. Drag `dist/mac-arm64/Qvoice.app` to `/Applications`.
+
+> **Note**: the Python venv is built with `uv` and uses its downloaded Python 3.12. The `repair-venv` step copies `libpython3.12.dylib` from uv's cache into the bundle to resolve the `@executable_path` reference. If you recreate the venv with a different Python version, update the source path in `package.json`'s `repair-venv` script.
+
+## Checking models
+
+```bash
+npm run check-models
+```
+
+Verifies the Python venv, all package imports, cached model files, and loads the engine model to confirm inference works. Useful for troubleshooting "stuck on loading model" issues — run after setup or anytime the app won't start.
+
+There's also a **Check Models** button in the Settings UI that runs the same verification and shows results inline.
+
 ## Permissions
 
 Two macOS permissions are required on first use:
