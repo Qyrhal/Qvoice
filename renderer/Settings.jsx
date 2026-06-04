@@ -76,7 +76,8 @@ function Toggle({ on, onClick }) {
 const KBD_KEYS = [
   { val: 'left-control',  symbol: '⌃', sub: 'L' },
   { val: 'right-control', symbol: '⌃', sub: 'R' },
-  { val: 'command',       symbol: '⌘', sub: null },
+  { val: 'left-command',  symbol: '⌘', sub: 'L' },
+  { val: 'right-command', symbol: '⌘', sub: 'R' },
   { val: 'left-option',   symbol: '⌥', sub: 'L' },
   { val: 'right-option',  symbol: '⌥', sub: 'R' },
   { val: 'left-shift',    symbol: '⇧', sub: 'L' },
@@ -299,7 +300,7 @@ export function Settings() {
   const isParakeet = form.engine === 'parakeet'
   const hotkeyKeyName = {
     control: 'Control', 'left-control': 'Left ⌃', 'right-control': 'Right ⌃',
-    command: 'Command', option: 'Option', 'left-option': 'Left ⌥', 'right-option': 'Right ⌥',
+    command: 'Command', 'left-command': 'Left ⌘', 'right-command': 'Right ⌘', option: 'Option', 'left-option': 'Left ⌥', 'right-option': 'Right ⌥',
     shift: 'Shift', 'left-shift': 'Left ⇧', 'right-shift': 'Right ⇧',
   }[form.hotkeyKey] || 'Control'
 

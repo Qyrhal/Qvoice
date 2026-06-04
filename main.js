@@ -346,6 +346,8 @@ const HOTKEY_KEYCODES = {
   'left-control':  [29],
   'right-control': [3613],
   'command':       [3675, 3676],
+  'left-command':  [3675],
+  'right-command': [3676],
   'option':        [56, 3608],
   'left-option':   [56],
   'right-option':  [3608],
@@ -355,7 +357,7 @@ const HOTKEY_KEYCODES = {
 }
 
 function hotkeyLabel() {
-  const keyName = { control: 'Control', 'left-control': 'Left Control', 'right-control': 'Right Control', command: 'Command', option: 'Option', 'left-option': 'Left Option', 'right-option': 'Right Option', shift: 'Shift', 'left-shift': 'Left Shift', 'right-shift': 'Right Shift' }[settings.hotkeyKey || 'control'] || 'Control'
+  const keyName = { control: 'Control', 'left-control': 'Left Control', 'right-control': 'Right Control', command: 'Command', 'left-command': 'Left Command', 'right-command': 'Right Command', option: 'Option', 'left-option': 'Left Option', 'right-option': 'Right Option', shift: 'Shift', 'left-shift': 'Left Shift', 'right-shift': 'Right Shift' }[settings.hotkeyKey || 'control'] || 'Control'
   return (settings.hotkeyMode || 'double-tap') === 'push-to-talk'
     ? `Hold ${keyName} to record`
     : `Double-tap ${keyName} to toggle`
