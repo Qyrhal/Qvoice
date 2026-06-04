@@ -145,6 +145,58 @@ select option { background: #1e1e20; }
   color: rgba(255,255,255,0.92);
 }
 
+/* ── Kbd Picker ─────────────────────────────────────────── */
+.kbd-picker {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.kbd-key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding: 5px 8px 4px;
+  border-radius: 7px;
+  border: 0.5px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.25);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  color: rgba(255,255,255,0.55);
+}
+
+.kbd-key:hover {
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.22);
+}
+
+.kbd-key.active {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.30);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.3);
+  color: rgba(255,255,255,0.95);
+}
+
+.kbd-symbol {
+  font-size: 16px;
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+}
+
+.kbd-sub {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: inherit;
+  opacity: 0.7;
+  margin-top: 1px;
+  text-transform: uppercase;
+}
+
 /* ── Textarea ───────────────────────────────────────────── */
 textarea {
   width: 100%;

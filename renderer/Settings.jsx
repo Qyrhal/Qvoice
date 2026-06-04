@@ -73,6 +73,32 @@ function Toggle({ on, onClick }) {
 }
 
 // ─── Segmented Control ─────────────────────────────────────────
+const KBD_KEYS = [
+  { val: 'left-control',  symbol: '⌃', sub: 'L' },
+  { val: 'right-control', symbol: '⌃', sub: 'R' },
+  { val: 'command',       symbol: '⌘', sub: null },
+  { val: 'option',        symbol: '⌥', sub: null },
+  { val: 'left-shift',    symbol: '⇧', sub: 'L' },
+  { val: 'right-shift',   symbol: '⇧', sub: 'R' },
+]
+
+function KbdPicker({ value, onChange }) {
+  return (
+    <div className="kbd-picker">
+      {KBD_KEYS.map(({ val, symbol, sub }) => (
+        <button
+          key={val}
+          className={`kbd-key ${value === val || (val === 'left-control' && value === 'control') ? 'active' : ''}`}
+          onClick={() => onChange(val)}
+        >
+          <span className="kbd-symbol">{symbol}</span>
+          {sub && <span className="kbd-sub">{sub}</span>}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function SegControl({ value, options, onChange }) {
   return (
     <div className="seg-ctrl">
@@ -232,6 +258,7 @@ export function Settings() {
     parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v2',
     correctionEnabled: true,
     autoPaste: true,
+    symmetricWaveform: false,
     hotkeyKey: 'control',
     hotkeyMode: 'double-tap',
   })
@@ -269,7 +296,11 @@ export function Settings() {
   }
 
   const isParakeet = form.engine === 'parakeet'
-  const hotkeyKeyName = { control: 'Control', command: 'Command', option: 'Option', shift: 'Shift' }[form.hotkeyKey] || 'Control'
+  const hotkeyKeyName = {
+    control: 'Control', 'left-control': 'Left ⌃', 'right-control': 'Right ⌃',
+    command: 'Command', option: 'Option',
+    shift: 'Shift', 'left-shift': 'Left ⇧', 'right-shift': 'Right ⇧',
+  }[form.hotkeyKey] || 'Control'
 
   function modelStatusFor(val, group) {
     const dl = downloads[val]
@@ -359,7 +390,7 @@ export function Settings() {
         <div className="section">
           <div className="section-title">Hotkey</div>
           <GlassCard>
-            <div className="row"><span className="label">Key</span><SegControl value={form.hotkeyKey} options={[{ val: 'control', label: 'Control' }, { val: 'command', label: 'Command' }, { val: 'option', label: 'Option' }, { val: 'shift', label: 'Shift' }]} onChange={v => set('hotkeyKey', v)} /></div>
+            <div className="row"><span className="label">Key</span><KbdPicker value={form.hotkeyKey} onChange={v => set('hotkeyKey', v)} /></div>
             <div className="row"><span className="label">Mode<div className="label-sub">{form.hotkeyMode === 'push-to-talk' ? `Hold ${hotkeyKeyName} to record` : `Double-tap ${hotkeyKeyName} to toggle`}</div></span><SegControl value={form.hotkeyMode} options={[{ val: 'double-tap', label: 'Double-tap' }, { val: 'push-to-talk', label: 'Hold key' }]} onChange={v => set('hotkeyMode', v)} /></div>
           </GlassCard>
         </div>
@@ -369,6 +400,7 @@ export function Settings() {
           <div className="section-title">Behavior</div>
           <GlassCard>
             <div className="row"><div className="label">Auto Paste<div className="label-sub">Skip preview and paste immediately</div></div><Toggle on={form.autoPaste} onClick={() => set('autoPaste', !form.autoPaste)} /></div>
+            <div className="row"><div className="label">Symmetric Waveform<div className="label-sub">Bars grow from center during recording</div></div><Toggle on={form.symmetricWaveform} onClick={() => set('symmetricWaveform', !form.symmetricWaveform)} /></div>
           </GlassCard>
         </div>
 

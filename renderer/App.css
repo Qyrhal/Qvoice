@@ -1,11 +1,9 @@
 /* ── Glass Panel ─────────────────────────────────────────────── */
 .glass-panel {
   position: relative;
-  border-radius: 22px;
   -webkit-app-region: drag;
   will-change: transform, opacity;
   background: transparent;
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
 }
 
 .glass-panel.entering {
@@ -49,6 +47,10 @@
   gap: 2.5px;
   height: 18px;
   flex-shrink: 0;
+}
+
+.signal-bars.symmetric {
+  align-items: center;
 }
 
 .signal-bar {

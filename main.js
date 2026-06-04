@@ -42,6 +42,7 @@ const DEFAULT_SETTINGS = {
   llmRepo: 'LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit',
   systemPrompt: 'You are a speech transcription corrector. Fix grammar, punctuation, and misheard words in the user\'s text. Return ONLY the corrected text — no explanation, no quotes, nothing else.',
   autoPaste: true,
+  symmetricWaveform: false,
   correctionEnabled: true,
   beamSize: 5,
   parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v2',
@@ -118,7 +119,7 @@ function createWindow() {
   win.loadFile(loadPath)
 
   win.webContents.on('did-finish-load', () => {
-    win.webContents.send('settings-update', { autoPaste: settings.autoPaste })
+    win.webContents.send('settings-update', { autoPaste: settings.autoPaste, symmetricWaveform: settings.symmetricWaveform })
   })
 }
 
@@ -341,14 +342,18 @@ function stopRecording() {
 
 // ─── Global Hotkey ────────────────────────────────────────────
 const HOTKEY_KEYCODES = {
-  control: [29, 3613],
-  command: [3675, 3676],
-  option:  [56, 3608],
-  shift:   [42, 54],
+  'control':       [29, 3613],
+  'left-control':  [29],
+  'right-control': [3613],
+  'command':       [3675, 3676],
+  'option':        [56, 3608],
+  'shift':         [42, 54],
+  'left-shift':    [42],
+  'right-shift':   [54],
 }
 
 function hotkeyLabel() {
-  const keyName = { control: 'Control', command: 'Command', option: 'Option', shift: 'Shift' }[settings.hotkeyKey || 'control'] || 'Control'
+  const keyName = { control: 'Control', 'left-control': 'Left Control', 'right-control': 'Right Control', command: 'Command', option: 'Option', shift: 'Shift', 'left-shift': 'Left Shift', 'right-shift': 'Right Shift' }[settings.hotkeyKey || 'control'] || 'Control'
   return (settings.hotkeyMode || 'double-tap') === 'push-to-talk'
     ? `Hold ${keyName} to record`
     : `Double-tap ${keyName} to toggle`

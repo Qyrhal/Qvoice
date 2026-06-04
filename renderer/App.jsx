@@ -102,10 +102,12 @@ class WavRecorder {
 }
 
 // ─── Signal Bars ───────────────────────────────────────────────
-const BAR_HEIGHTS = [4, 7, 11, 15];
+const BAR_HEIGHTS_STANDARD  = [4, 7, 11, 15];
+const BAR_HEIGHTS_SYMMETRIC = [4, 7, 12, 7, 4];
 
-function SignalBars({ analyser }) {
+function SignalBars({ analyser, symmetric }) {
   const barRefs = useRef([]);
+  const heights = symmetric ? BAR_HEIGHTS_SYMMETRIC : BAR_HEIGHTS_STANDARD;
 
   useEffect(() => {
     if (!analyser) return;
@@ -122,7 +124,7 @@ function SignalBars({ analyser }) {
 
       barRefs.current.forEach((el, i) => {
         if (!el) return;
-        el.style.height = `${BAR_HEIGHTS[i] + vol * 7}px`;
+        el.style.height = `${heights[i] + vol * 10}px`;
         el.style.opacity = `${0.35 + vol * 0.65}`;
       });
     }
@@ -131,11 +133,11 @@ function SignalBars({ analyser }) {
     return () => {
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [analyser]);
+  }, [analyser, symmetric]);
 
   return (
-    <div className="signal-bars">
-      {BAR_HEIGHTS.map((h, i) => (
+    <div className={`signal-bars${symmetric ? ' symmetric' : ''}`}>
+      {heights.map((h, i) => (
         <div
           key={i}
           ref={(el) => (barRefs.current[i] = el)}
@@ -171,6 +173,7 @@ function PillContent({
   appName,
   liveText,
   resultText,
+  symmetric,
   onPaste,
   onDismiss,
 }) {
@@ -186,7 +189,7 @@ function PillContent({
     return (
       <>
         <div className="pill-row">
-          <SignalBars analyser={analyser} />
+          <SignalBars analyser={analyser} symmetric={symmetric} />
           <div className="rec-dot" />
           <span className="rec-timer">{formatTime(elapsed)}</span>
           {appName && (
@@ -263,6 +266,7 @@ export function App() {
   const partialInFlightRef = useRef(false);
   const elapsedTimerRef = useRef(null);
   const autoPasteRef = useRef(true);
+  const [symmetricWaveform, setSymmetricWaveform] = useState(false);
   stateRef.current = state;
 
   function showPanel() {
@@ -319,6 +323,7 @@ export function App() {
 
     qv.onSettingsUpdate((s) => {
       if (s.autoPaste !== undefined) autoPasteRef.current = s.autoPaste;
+      if (s.symmetricWaveform !== undefined) setSymmetricWaveform(s.symmetricWaveform);
     });
     qv.onPreviewConfirmed(() => hidePanel());
     qv.onServerReady(() => {
@@ -419,6 +424,7 @@ export function App() {
           appName={appName}
           liveText={liveText}
           resultText={resultText}
+          symmetric={symmetricWaveform}
           onPaste={() => window.qvoice.confirmPaste(resultText)}
           onDismiss={hidePanel}
         />
