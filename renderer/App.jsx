@@ -235,13 +235,14 @@ function GlassShape() {
         >
           <Frame maxWidth={Infinity} maxHeight={Infinity}>
             <GlassContainer
-              blur={0}
-              tint={{ r: 0, g: 0, b: 0, a: 0 }}
-              specularStrength={0.7}
-              specularWidth={0.5}
-              specularFalloff={2}
-              bezelWidth={1.5}
-              thickness={6}
+              blur={6}
+              tint={{ r: 1, g: 1, b: 1, a: 0.08 }}
+              specularStrength={0.6}
+              specularWidth={0.4}
+              specularFalloff={1.6}
+              specularOpacity={0.15}
+              thickness={70}
+              bezelWidth={0}
               shadowColor={{ r: 0, g: 0, b: 0, a: 0 }}
               shadowOffsetX={0}
               shadowOffsetY={0}
