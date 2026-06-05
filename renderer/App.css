@@ -252,18 +252,36 @@
 }
 
 /* ── Streaming word blur-reveal ─────────────────────────────── */
-.sw-word-settled {
-  display: inline;
-  filter: blur(0px);
-  opacity: 1;
-  transition: filter 0.45s ease, opacity 0.45s ease;
+@keyframes swWordReveal {
+  0%   { filter: blur(8px); opacity: 0.25; }
+  100% { filter: blur(0px); opacity: 1; }
 }
+
+.sw-word-settled { display: inline; }
 
 .sw-word-new {
   display: inline;
-  filter: blur(7px);
-  opacity: 0.55;
-  transition: filter 0.45s ease, opacity 0.45s ease;
+  animation: swWordReveal 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── Inline cursor bars ──────────────────────────────────────── */
+.sw-cursor-bars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+  height: 1em;
+  vertical-align: middle;
+  margin-left: 5px;
+  position: relative;
+  top: 1px;
+}
+
+.sw-cursor-bar {
+  display: inline-block;
+  width: 2.5px;
+  border-radius: 1.5px;
+  background: rgba(255, 255, 255, 0.55);
+  transition: height 0.07s ease-out, opacity 0.1s ease-out;
 }
 
 .sw-placeholder {

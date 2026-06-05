@@ -248,8 +248,44 @@ function PillContent({
   return null;
 }
 
+// ─── Inline Cursor Bars (SuperWhisper) ────────────────────────
+const CURSOR_HEIGHTS = [5, 9, 5];
+
+function InlineCursorBars({ analyser }) {
+  const refs = useRef([]);
+
+  useEffect(() => {
+    if (!analyser) return;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    let frame;
+    function tick() {
+      frame = requestAnimationFrame(tick);
+      analyser.getByteFrequencyData(data);
+      let sum = 0;
+      const count = Math.min(24, data.length);
+      for (let i = 0; i < count; i++) sum += data[i];
+      const vol = sum / (count * 255);
+      refs.current.forEach((el, i) => {
+        if (!el) return;
+        el.style.height = `${CURSOR_HEIGHTS[i] + vol * 9}px`;
+        el.style.opacity = `${0.45 + vol * 0.55}`;
+      });
+    }
+    tick();
+    return () => cancelAnimationFrame(frame);
+  }, [analyser]);
+
+  return (
+    <span className="sw-cursor-bars">
+      {CURSOR_HEIGHTS.map((h, i) => (
+        <span key={i} ref={el => refs.current[i] = el} className="sw-cursor-bar" style={{ height: `${h}px` }} />
+      ))}
+    </span>
+  );
+}
+
 // ─── Streaming Text (SuperWhisper blur-reveal) ────────────────
-function StreamingText({ text }) {
+function StreamingText({ text, analyser }) {
   const prevTextRef = useRef('');
   const [settledCount, setSettledCount] = useState(0);
 
@@ -261,15 +297,23 @@ function StreamingText({ text }) {
     setSettledCount(prevWordCount);
   }, [text]);
 
-  if (!text) return null;
-  const words = text.trim().split(/\s+/);
+  const words = text ? text.trim().split(/\s+/) : [];
+
   return (
     <>
-      {words.map((word, i) => (
-        <span key={i} className={i < settledCount ? 'sw-word-settled' : 'sw-word-new'}>
-          {word}{' '}
-        </span>
-      ))}
+      {words.map((word, i) => {
+        const isNew = i >= settledCount;
+        return (
+          <span
+            key={i}
+            className={isNew ? 'sw-word-new' : 'sw-word-settled'}
+            style={isNew ? { animationDelay: `${(i - settledCount) * 0.05}s` } : undefined}
+          >
+            {word}{' '}
+          </span>
+        );
+      })}
+      <InlineCursorBars analyser={analyser} />
     </>
   );
 }
@@ -302,13 +346,15 @@ function SuperWhisperContent({ state, liveText, resultText, analyser, symmetric,
     return (
       <div className="sw-panel">
         <div className="sw-text-area">
-          {liveText
-            ? <p className="sw-live-text"><StreamingText text={liveText} /></p>
-            : <p className="sw-placeholder">Listening…</p>
-          }
+          <p className={liveText ? 'sw-live-text' : 'sw-placeholder'}>
+            {liveText
+              ? <StreamingText text={liveText} analyser={analyser} />
+              : <>Listening<InlineCursorBars analyser={analyser} /></>
+            }
+          </p>
         </div>
         <div className="sw-bar">
-          <div className="sw-bar-left"><SignalBars analyser={analyser} symmetric={symmetric} /><span className="sw-bar-label">Voice to text</span></div>
+          <div className="sw-bar-left"><MicIcon /><span className="sw-bar-label">Voice to text</span></div>
           <div className="sw-bar-right">
             <button className="sw-action" onClick={onStop}>Stop</button>
             <button className="sw-action sw-cancel" onClick={onCancel}>Cancel</button>
