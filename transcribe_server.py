@@ -22,7 +22,7 @@ DEFAULT_SYSTEM_PROMPT = (
     "Return ONLY the corrected text — no explanation, no quotes, nothing else."
 )
 
-MIN_AUDIO_SAMPLES = 1600  # 0.1 s at 16 kHz — below this, return silence
+MIN_AUDIO_SAMPLES = 16000  # 1 s at 16 kHz — Parakeet mel-spectrogram needs at least this
 
 def load_wav_direct(path, target_sr):
     """Read a 16-bit PCM WAV without ffmpeg. Resamples if sample rate differs."""
@@ -111,8 +111,9 @@ for line in sys.stdin:
         if ENGINE == "parakeet":
             try:
                 text = parakeet_transcribe(audio_path)
-            except ValueError as e:
-                # Too short / empty audio — not a crash, just return empty
+            except Exception as e:
+                # Too short / empty / bad audio — return empty, keep server alive
+                print(f"Parakeet skip: {e}", file=sys.stderr, flush=True)
                 print(json.dumps({"status": "ok", "text": ""}), flush=True)
                 continue
             if req.get("partial"):
