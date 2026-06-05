@@ -251,6 +251,21 @@
   gap: 8px;
 }
 
+/* ── Streaming word blur-reveal ─────────────────────────────── */
+.sw-word-settled {
+  display: inline;
+  filter: blur(0px);
+  opacity: 1;
+  transition: filter 0.45s ease, opacity 0.45s ease;
+}
+
+.sw-word-new {
+  display: inline;
+  filter: blur(7px);
+  opacity: 0.55;
+  transition: filter 0.45s ease, opacity 0.45s ease;
+}
+
 .sw-placeholder {
   font-size: 15px;
   color: rgba(255, 255, 255, 0.22);

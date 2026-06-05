@@ -248,6 +248,32 @@ function PillContent({
   return null;
 }
 
+// ─── Streaming Text (SuperWhisper blur-reveal) ────────────────
+function StreamingText({ text }) {
+  const prevTextRef = useRef('');
+  const [settledCount, setSettledCount] = useState(0);
+
+  useEffect(() => {
+    const prev = prevTextRef.current;
+    prevTextRef.current = text;
+    if (!text) { setSettledCount(0); return; }
+    const prevWordCount = prev.trim() ? prev.trim().split(/\s+/).length : 0;
+    setSettledCount(prevWordCount);
+  }, [text]);
+
+  if (!text) return null;
+  const words = text.trim().split(/\s+/);
+  return (
+    <>
+      {words.map((word, i) => (
+        <span key={i} className={i < settledCount ? 'sw-word-settled' : 'sw-word-new'}>
+          {word}{' '}
+        </span>
+      ))}
+    </>
+  );
+}
+
 // ─── SuperWhisper Layout ──────────────────────────────────────
 function MicIcon() {
   return (
@@ -277,7 +303,7 @@ function SuperWhisperContent({ state, liveText, resultText, analyser, symmetric,
       <div className="sw-panel">
         <div className="sw-text-area">
           {liveText
-            ? <p className="sw-live-text">{liveText}</p>
+            ? <p className="sw-live-text"><StreamingText text={liveText} /></p>
             : <p className="sw-placeholder">Listening…</p>
           }
         </div>
