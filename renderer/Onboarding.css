@@ -1,0 +1,241 @@
+/* ── Root ─────────────────────────────────────────────────────── */
+.ob-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: transparent;
+  color: rgba(255,255,255,0.9);
+  user-select: none;
+}
+
+/* ── Traffic light space ──────────────────────────────────────── */
+.ob-titlebar {
+  height: 52px;
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+}
+
+/* ── Steps ────────────────────────────────────────────────────── */
+.ob-steps {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding-bottom: 28px;
+  flex-shrink: 0;
+}
+
+.ob-step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: background 0.2s;
+}
+
+.ob-step-dot.done   { background: rgba(255,255,255,0.35); }
+.ob-step-dot.active { background: rgba(255,255,255,0.85); }
+
+/* ── Body ─────────────────────────────────────────────────────── */
+.ob-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 32px;
+}
+
+.ob-body-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* ── Typography ───────────────────────────────────────────────── */
+.ob-heading {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  margin-bottom: 6px;
+}
+
+.ob-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 20px;
+  line-height: 1.45;
+}
+
+.ob-sub-sm { margin-top: -12px; margin-bottom: 10px; font-size: 12px; }
+
+.ob-section-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.3);
+  margin: 20px 0 6px;
+}
+
+/* ── Option Cards ─────────────────────────────────────────────── */
+.ob-cards { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+
+.ob-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 0.5px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
+  color: inherit;
+  width: 100%;
+}
+
+.ob-card:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.16); }
+
+.ob-card.selected {
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.28);
+}
+
+.ob-card-left { flex: 1; min-width: 0; }
+.ob-card-label { font-size: 14px; font-weight: 500; }
+.ob-card-sub { font-size: 12px; color: rgba(255,255,255,0.40); margin-top: 2px; }
+
+.ob-cached {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #30d158;
+  background: rgba(48,209,88,0.12);
+  padding: 2px 7px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.ob-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.ob-card.selected .ob-radio { border-color: rgba(255,255,255,0.7); }
+.ob-radio-fill { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+
+/* ── Summary ──────────────────────────────────────────────────── */
+.ob-summary {
+  background: rgba(255,255,255,0.05);
+  border: 0.5px solid rgba(255,255,255,0.10);
+  border-radius: 11px;
+  padding: 4px 0;
+  margin-bottom: 16px;
+}
+
+.ob-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  font-size: 13.5px;
+}
+
+.ob-summary-row:last-child { border-bottom: none; }
+.ob-summary-key { color: rgba(255,255,255,0.45); }
+.ob-summary-val { font-weight: 500; }
+
+.ob-note {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  text-align: center;
+  padding: 4px 0 8px;
+}
+
+/* ── Download ─────────────────────────────────────────────────── */
+.ob-dl-list { width: 100%; margin-top: 24px; display: flex; flex-direction: column; gap: 14px; }
+
+.ob-dl-item { display: flex; flex-direction: column; gap: 6px; }
+
+.ob-dl-name { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.7); }
+
+.ob-dl-done { font-size: 12px; color: #30d158; }
+
+.ob-bar-track {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.10);
+  overflow: hidden;
+}
+
+.ob-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.7);
+  transition: width 0.3s ease;
+}
+
+/* ── Done check ───────────────────────────────────────────────── */
+.ob-check {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(48,209,88,0.15);
+  border: 1.5px solid rgba(48,209,88,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #30d158;
+  margin-bottom: 18px;
+}
+
+/* ── Footer ───────────────────────────────────────────────────── */
+.ob-footer {
+  display: flex;
+  gap: 8px;
+  padding: 20px 32px 28px;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.ob-btn-primary {
+  padding: 9px 22px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255,255,255,0.92);
+  color: #000;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.ob-btn-primary:hover { opacity: 0.88; }
+.ob-btn-primary:active { opacity: 0.7; }
+
+.ob-btn-ghost {
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 0.5px solid rgba(255,255,255,0.14);
+  background: transparent;
+  color: rgba(255,255,255,0.55);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ob-btn-ghost:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8); }

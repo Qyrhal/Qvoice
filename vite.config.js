@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         main: 'renderer/index.html',
         settings: 'renderer/settings.html',
+        onboarding: 'renderer/onboarding.html',
       },
     },
   },

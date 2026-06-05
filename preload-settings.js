@@ -10,4 +10,5 @@ contextBridge.exposeInMainWorld('qvoiceSettings', {
     ipcRenderer.on('download-progress', handler)
     return () => ipcRenderer.removeListener('download-progress', handler)
   },
+  completeOnboarding: (s) => ipcRenderer.invoke('complete-onboarding', s),
 })

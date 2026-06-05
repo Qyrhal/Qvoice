@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('qvoice', {
   onRecordingStop:        (cb) => ipcRenderer.on('recording-stop',         () => cb()),
   onTranscriptionProgress:(cb) => ipcRenderer.on('transcription-progress', (_, d) => cb(d)),
   onPreviewConfirmed:     (cb) => ipcRenderer.on('preview-confirmed',      () => cb()),
+  onRecordingCancel:      (cb) => ipcRenderer.on('recording-cancel',       () => cb()),
 
   transcribeAudio:   (buf)  => ipcRenderer.invoke('transcribe-audio', buf),
   transcribePartial: (buf)  => ipcRenderer.invoke('transcribe-partial', buf),
@@ -16,4 +17,6 @@ contextBridge.exposeInMainWorld('qvoice', {
   confirmPaste:      (text) => ipcRenderer.send('confirm-paste', { text }),
   setHeight:         (h)    => ipcRenderer.send('set-height', h),
   hideWindow:        ()     => ipcRenderer.send('hide-window'),
+  stopRecording:     ()     => ipcRenderer.send('stop-recording-request'),
+  cancelRecording:   ()     => ipcRenderer.send('cancel-recording'),
 })

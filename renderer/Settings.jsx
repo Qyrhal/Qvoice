@@ -249,6 +249,29 @@ function ModelCombo({ value, options, onChange, onSelectModel, modelStatus, down
   )
 }
 
+// ─── Theme Picker ───────────────────────────────────────────────
+const THEMES = [
+  { val: 'default',       label: 'Default',       sub: 'Native macOS pill' },
+  { val: 'whisper-flow',  label: 'Whisper Flow',  sub: 'Purple-tinted pill' },
+  { val: 'superwhisper',  label: 'SuperWhisper',  sub: 'Card with action bar' },
+]
+
+function ThemePicker({ value, onChange }) {
+  return (
+    <div className="theme-picker">
+      {THEMES.map(({ val, label, sub }) => (
+        <button key={val} className={`theme-card ${value === val ? 'active' : ''}`} onClick={() => onChange(val)}>
+          <div className={`theme-preview theme-preview-${val}`}>
+            <div className="tp-pill" />
+          </div>
+          <div className="theme-card-name">{label}</div>
+          <div className="theme-card-sub">{sub}</div>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ─── Settings ──────────────────────────────────────────────────
 export function Settings() {
   const [form, setForm] = useState({
@@ -263,6 +286,7 @@ export function Settings() {
     symmetricWaveform: false,
     hotkeyKey: 'control',
     hotkeyMode: 'double-tap',
+    theme: 'default',
   })
   const [saved, setSaved] = useState(false)
   const [modelStatus, setModelStatus] = useState(null)
@@ -395,6 +419,12 @@ export function Settings() {
             <div className="row"><span className="label">Key</span><KbdPicker value={form.hotkeyKey} onChange={v => set('hotkeyKey', v)} /></div>
             <div className="row"><span className="label">Mode<div className="label-sub">{form.hotkeyMode === 'push-to-talk' ? `Hold ${hotkeyKeyName} to record` : `Double-tap ${hotkeyKeyName} to toggle`}</div></span><SegControl value={form.hotkeyMode} options={[{ val: 'double-tap', label: 'Double-tap' }, { val: 'push-to-talk', label: 'Hold key' }]} onChange={v => set('hotkeyMode', v)} /></div>
           </GlassCard>
+        </div>
+
+        {/* Theme */}
+        <div className="section">
+          <div className="section-title">Theme</div>
+          <ThemePicker value={form.theme} onChange={v => set('theme', v)} />
         </div>
 
         {/* Behavior */}

@@ -204,3 +204,144 @@
   background: #30d158;
   color: #000;
 }
+
+/* ── Theme: Whisper Flow ─────────────────────────────────────── */
+.theme-whisper-flow {
+  background: rgba(16, 14, 28, 0.72);
+  border-radius: 22px;
+  box-shadow:
+    inset 0 1.5px 0 rgba(140, 100, 255, 0.35),
+    inset 0 0 0 0.5px rgba(140, 100, 255, 0.15),
+    0 8px 32px rgba(80, 40, 180, 0.25);
+}
+
+.theme-whisper-flow .rec-timer { color: rgba(180, 160, 255, 0.95); }
+.theme-whisper-flow .signal-bar { background: rgba(160, 130, 255, 0.5); }
+.theme-whisper-flow .rec-dot { background: #bf5af2; box-shadow: 0 0 8px #bf5af280; }
+.theme-whisper-flow .done-dot { background: #bf5af2; }
+.theme-whisper-flow .pill-spinner span { background: rgba(160, 130, 255, 0.5); }
+.theme-whisper-flow .preview-btn-paste { background: #bf5af2; color: #fff; }
+
+/* ── Theme: SuperWhisper ─────────────────────────────────────── */
+.theme-superwhisper {
+  border-radius: 16px;
+  background: rgba(22, 22, 26, 0.88);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.10),
+    0 12px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+/* ── SuperWhisper panel layout ─────────────────────────────── */
+.sw-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 110px;
+}
+
+.sw-text-area {
+  flex: 1;
+  padding: 14px 16px 10px;
+  min-height: 68px;
+}
+
+.sw-text-area.sw-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sw-placeholder {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.22);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.sw-live-text {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.82);
+  margin: 0;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.sw-result-text {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 0;
+  line-height: 1.5;
+  word-break: break-word;
+  user-select: text;
+  cursor: text;
+}
+
+.sw-status-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ── SuperWhisper bottom bar ────────────────────────────────── */
+.sw-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  height: 42px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+.sw-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.sw-bar-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sw-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sw-action {
+  padding: 4px 11px;
+  border-radius: 7px;
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s;
+  -webkit-app-region: no-drag;
+}
+
+.sw-action:hover { background: rgba(255, 255, 255, 0.13); }
+.sw-action:active { opacity: 0.6; }
+
+.sw-cancel {
+  background: transparent;
+  border-color: transparent;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.sw-cancel:hover { background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.6); }
+
+.sw-paste {
+  background: rgba(48, 209, 88, 0.18);
+  border-color: rgba(48, 209, 88, 0.3);
+  color: #30d158;
+}
+
+.sw-paste:hover { background: rgba(48, 209, 88, 0.28); }

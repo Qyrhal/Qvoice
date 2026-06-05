@@ -248,6 +248,76 @@ function PillContent({
   return null;
 }
 
+// ─── SuperWhisper Layout ──────────────────────────────────────
+function MicIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect x="4" y="1" width="6" height="8" rx="3" fill="rgba(255,255,255,0.45)" />
+      <path d="M2 7a5 5 0 0010 0" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="7" y1="12" x2="7" y2="13" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="5" y1="13" x2="9" y2="13" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SuperWhisperContent({ state, liveText, resultText, analyser, symmetric, onStop, onCancel, onPaste, onDismiss }) {
+  if (state === 'loading' || state === 'transcribing' || state === 'correcting') {
+    const label = state === 'loading' ? 'Loading model' : state === 'transcribing' ? 'Transcribing…' : 'Correcting…';
+    return (
+      <div className="sw-panel">
+        <div className="sw-text-area sw-center"><PillSpinner /><span className="sw-status-label">{label}</span></div>
+        <div className="sw-bar">
+          <div className="sw-bar-left"><MicIcon /><span className="sw-bar-label">Voice to text</span></div>
+        </div>
+      </div>
+    );
+  }
+  if (state === 'recording') {
+    return (
+      <div className="sw-panel">
+        <div className="sw-text-area">
+          {liveText
+            ? <p className="sw-live-text">{liveText}</p>
+            : <p className="sw-placeholder">Listening…</p>
+          }
+        </div>
+        <div className="sw-bar">
+          <div className="sw-bar-left"><SignalBars analyser={analyser} symmetric={symmetric} /><span className="sw-bar-label">Voice to text</span></div>
+          <div className="sw-bar-right">
+            <button className="sw-action" onClick={onStop}>Stop</button>
+            <button className="sw-action sw-cancel" onClick={onCancel}>Cancel</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (state === 'preview') {
+    return (
+      <div className="sw-panel">
+        <div className="sw-text-area"><p className="sw-result-text">{resultText}</p></div>
+        <div className="sw-bar">
+          <div className="sw-bar-left"><MicIcon /><span className="sw-bar-label">Voice to text</span></div>
+          <div className="sw-bar-right">
+            <button className="sw-action sw-paste" onClick={onPaste}>Paste</button>
+            <button className="sw-action sw-cancel" onClick={onDismiss}>Dismiss</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (state === 'result') {
+    return (
+      <div className="sw-panel">
+        <div className="sw-text-area sw-center"><div className="done-dot" /><span className="sw-status-label">Pasted</span></div>
+        <div className="sw-bar">
+          <div className="sw-bar-left"><MicIcon /><span className="sw-bar-label">Voice to text</span></div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
 // ─── App ──────────────────────────────────────────────────────
 export function App() {
   const [state, setState] = useState("idle");
@@ -267,6 +337,7 @@ export function App() {
   const elapsedTimerRef = useRef(null);
   const autoPasteRef = useRef(true);
   const [symmetricWaveform, setSymmetricWaveform] = useState(false);
+  const [theme, setTheme] = useState('default');
   stateRef.current = state;
 
   function showPanel() {
@@ -324,6 +395,18 @@ export function App() {
     qv.onSettingsUpdate((s) => {
       if (s.autoPaste !== undefined) autoPasteRef.current = s.autoPaste;
       if (s.symmetricWaveform !== undefined) setSymmetricWaveform(s.symmetricWaveform);
+      if (s.theme !== undefined) setTheme(s.theme);
+    });
+    qv.onRecordingCancel(() => {
+      stopPartialTimer();
+      stopElapsedTimer();
+      setLiveText('');
+      if (recorderRef.current) {
+        try { recorderRef.current.stop(); } catch {}
+        recorderRef.current = null;
+      }
+      setAnalyser(null);
+      hidePanel();
     });
     qv.onPreviewConfirmed(() => hidePanel());
     qv.onServerReady(() => {
@@ -414,20 +497,36 @@ export function App() {
 
   if (!visible) return null;
 
+  const isSuperWhisper = theme === 'superwhisper';
+
   return (
-    <div className={`glass-panel ${animating ? "entering" : "exiting"}`}>
+    <div className={`glass-panel theme-${theme} ${animating ? "entering" : "exiting"}`}>
       <div ref={overlayRef} className="glass-overlay">
-        <PillContent
-          state={state}
-          analyser={analyser}
-          elapsed={elapsed}
-          appName={appName}
-          liveText={liveText}
-          resultText={resultText}
-          symmetric={symmetricWaveform}
-          onPaste={() => window.qvoice.confirmPaste(resultText)}
-          onDismiss={hidePanel}
-        />
+        {isSuperWhisper ? (
+          <SuperWhisperContent
+            state={state}
+            liveText={liveText}
+            resultText={resultText}
+            analyser={analyser}
+            symmetric={symmetricWaveform}
+            onStop={() => window.qvoice.stopRecording()}
+            onCancel={() => window.qvoice.cancelRecording()}
+            onPaste={() => window.qvoice.confirmPaste(resultText)}
+            onDismiss={hidePanel}
+          />
+        ) : (
+          <PillContent
+            state={state}
+            analyser={analyser}
+            elapsed={elapsed}
+            appName={appName}
+            liveText={liveText}
+            resultText={resultText}
+            symmetric={symmetricWaveform}
+            onPaste={() => window.qvoice.confirmPaste(resultText)}
+            onDismiss={hidePanel}
+          />
+        )}
       </div>
     </div>
   );

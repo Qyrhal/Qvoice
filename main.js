@@ -18,6 +18,7 @@ const EventEmitter = require('events')
 let win = null
 let tray = null
 let settingsWin = null
+let onboardingWin = null
 let isRecording = false
 let transcribeProcess = null
 let serverReady = false
@@ -48,7 +49,12 @@ const DEFAULT_SETTINGS = {
   parakeetModel: 'mlx-community/parakeet-tdt-0.6b-v2',
   hotkeyKey: 'control',
   hotkeyMode: 'double-tap',
+  theme: 'default',
+  onboardingComplete: false,
 }
+
+const THEME_WIDTHS = { 'default': 300, 'whisper-flow': 340, 'superwhisper': 460 }
+function themeWidth() { return THEME_WIDTHS[settings.theme] || 300 }
 
 function loadSettings() {
   try {
@@ -74,6 +80,7 @@ app.whenReady().then(() => {
   createTray()
   startTranscribeServer()
   setupHotkey()
+  if (!settings.onboardingComplete) openOnboardingWindow()
 })
 
 app.on('will-quit', () => {
@@ -85,10 +92,11 @@ app.on('will-quit', () => {
 function createWindow() {
   const { workAreaSize } = screen.getPrimaryDisplay()
 
+  const w = themeWidth()
   win = new BrowserWindow({
-    width: 300,
+    width: w,
     height: 46,
-    x: Math.floor(workAreaSize.width / 2 - 150),
+    x: Math.floor(workAreaSize.width / 2 - w / 2),
     y: 56,
     frame: false,
     vibrancy: 'hud',
@@ -119,7 +127,7 @@ function createWindow() {
   win.loadFile(loadPath)
 
   win.webContents.on('did-finish-load', () => {
-    win.webContents.send('settings-update', { autoPaste: settings.autoPaste, symmetricWaveform: settings.symmetricWaveform })
+    win.webContents.send('settings-update', { autoPaste: settings.autoPaste, symmetricWaveform: settings.symmetricWaveform, theme: settings.theme })
   })
 }
 
@@ -465,14 +473,25 @@ ipcMain.on('confirm-paste', (_, { text }) => {
 })
 
 ipcMain.on('set-height', (_, h) => {
-  win.setSize(300, Math.max(46, Math.min(h, 400)))
+  const w = themeWidth()
+  win.setSize(w, Math.max(46, Math.min(h, 600)))
 })
 
 ipcMain.on('hide-window', () => {
   isPreviewing = false
   previewText = ''
   win.hide()
-  win.setSize(300, 46)
+  win.setSize(themeWidth(), 46)
+})
+
+ipcMain.on('stop-recording-request', () => { if (isRecording) stopRecording() })
+
+ipcMain.on('cancel-recording', () => {
+  if (!isRecording) return
+  isRecording = false
+  recordingToken = null
+  updateTrayMenu('idle')
+  win.webContents.send('recording-cancel')
 })
 
 // ─── Settings Window ──────────────────────────────────────────
@@ -500,6 +519,29 @@ function openSettingsWindow() {
   })
   settingsWin.loadFile(path.join(__dirname, 'renderer', 'dist', 'settings.html'))
   settingsWin.on('closed', () => { settingsWin = null })
+}
+
+function openOnboardingWindow() {
+  if (onboardingWin && !onboardingWin.isDestroyed()) { onboardingWin.focus(); return }
+  onboardingWin = new BrowserWindow({
+    width: 500,
+    height: 580,
+    title: 'Welcome to Qvoice',
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    titleBarStyle: 'hidden',
+    trafficLightPosition: { x: 16, y: 18 },
+    transparent: true,
+    vibrancy: 'sidebar',
+    visualEffectState: 'active',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload-settings.js'),
+      contextIsolation: true,
+    }
+  })
+  onboardingWin.loadFile(path.join(__dirname, 'renderer', 'dist', 'onboarding.html'))
+  onboardingWin.on('closed', () => { onboardingWin = null })
 }
 
 ipcMain.handle('get-settings', () => ({ ...settings }))
@@ -579,13 +621,31 @@ ipcMain.handle('save-settings', (_, newSettings) => {
     newSettings.hotkeyKey  !== settings.hotkeyKey  ||
     newSettings.hotkeyMode !== settings.hotkeyMode
 
+  const themeChanged = newSettings.theme !== settings.theme
+
   settings = { ...settings, ...newSettings }
   correctionEnabled = settings.correctionEnabled
   saveSettingsToDisk(settings)
-  win?.webContents.send('settings-update', { autoPaste: settings.autoPaste })
+  win?.webContents.send('settings-update', { autoPaste: settings.autoPaste, symmetricWaveform: settings.symmetricWaveform, theme: settings.theme })
+
+  if (themeChanged && win && !win.isDestroyed()) {
+    const { workAreaSize } = screen.getPrimaryDisplay()
+    const w = themeWidth()
+    win.setSize(w, win.getSize()[1])
+    win.setPosition(Math.floor(workAreaSize.width / 2 - w / 2), win.getPosition()[1])
+  }
+
   updateTrayMenu()
   if (tray) tray.setToolTip(`Qvoice — ${hotkeyLabel()}`)
 
   if (needsRestart) restartTranscribeServer()
   if (needsHotkeyUpdate) registerHotkeyHandlers()
+})
+
+ipcMain.handle('complete-onboarding', (_, selectedSettings) => {
+  settings = { ...settings, ...selectedSettings, onboardingComplete: true }
+  correctionEnabled = settings.correctionEnabled
+  saveSettingsToDisk(settings)
+  restartTranscribeServer()
+  onboardingWin?.close()
 })

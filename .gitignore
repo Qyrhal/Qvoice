@@ -9,3 +9,5 @@ out/
 renderer/dist/
 .claude/
 package-lock.json
+# CocoIndex Code (ccc)
+/.cocoindex_code/
