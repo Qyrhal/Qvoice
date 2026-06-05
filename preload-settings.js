@@ -13,5 +13,6 @@ contextBridge.exposeInMainWorld('qvoiceSettings', {
   completeOnboarding:        (s) => ipcRenderer.invoke('complete-onboarding', s),
   redoOnboarding:            ()  => ipcRenderer.invoke('redo-onboarding'),
   checkPermissions:          ()  => ipcRenderer.invoke('check-permissions'),
+  requestMicPermission:      ()  => ipcRenderer.invoke('request-mic-permission'),
   openAccessibilitySettings: ()  => ipcRenderer.send('open-accessibility-settings'),
 })

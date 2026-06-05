@@ -61,47 +61,28 @@ function DownloadBar({ pct }) {
 // ─── Permission item ──────────────────────────────────────────────
 function PermissionRow({ icon, label, sub, status, onGrant }) {
   const granted = status === true || status === 'granted'
-  const denied  = status === 'denied'
+  const denied  = status === 'denied' || status === 'restricted'
   return (
-    <div className="perm-row">
+    <div className={`perm-row ${granted ? 'perm-row-granted' : ''}`}>
       <div className="perm-icon">{icon}</div>
       <div className="perm-text">
         <div className="perm-label">{label}</div>
         <div className="perm-sub">{sub}</div>
       </div>
       {granted
-        ? <div className="perm-badge granted">Granted</div>
+        ? <div className="perm-badge granted">✓ Granted</div>
         : denied
-          ? <div className="perm-badge denied">Denied — open System Settings</div>
-          : <button className="perm-btn" onClick={onGrant}>Grant</button>
+          ? <button className="perm-btn perm-btn-denied" onClick={onGrant}>Open Settings</button>
+          : <button className="perm-btn" onClick={onGrant}>Grant Access</button>
       }
     </div>
   )
 }
 
 // ─── Onboarding ───────────────────────────────────────────────────
-async function checkMic() {
-  try {
-    const res = await navigator.permissions.query({ name: 'microphone' })
-    return res.state  // 'granted' | 'denied' | 'prompt'
-  } catch {
-    return 'prompt'
-  }
-}
-
-async function requestMic() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    stream.getTracks().forEach(t => t.stop())
-    return 'granted'
-  } catch (err) {
-    return err.name === 'NotAllowedError' ? 'denied' : 'prompt'
-  }
-}
-
 export function Onboarding() {
   const [step, setStep] = useState(-1)
-  const [mic, setMic] = useState('prompt')        // 'granted' | 'denied' | 'prompt'
+  const [mic, setMic] = useState('not-determined')   // 'granted'|'denied'|'not-determined'|'restricted'
   const [accessibility, setAccessibility] = useState(false)
   const [engine, setEngine] = useState('parakeet')
   const [model, setModel] = useState('mlx-community/parakeet-tdt-0.6b-v3')
@@ -111,11 +92,13 @@ export function Onboarding() {
   const [allDone, setAllDone] = useState(false)
   const unsubRef = useRef(null)
 
-  // Poll mic + accessibility every 2s
+  // Poll both permissions every 2s via main process (TCC ground truth)
   useEffect(() => {
-    async function refresh() {
-      setMic(await checkMic())
-      window.qvoiceSettings.checkPermissions().then(r => setAccessibility(r.accessibility))
+    function refresh() {
+      window.qvoiceSettings.checkPermissions().then(r => {
+        setMic(r.mic)
+        setAccessibility(r.accessibility)
+      })
     }
     refresh()
     const t = setInterval(refresh, 2000)
@@ -201,7 +184,7 @@ export function Onboarding() {
             label="Microphone"
             sub="Required to record your voice"
             status={mic}
-            onGrant={() => requestMic().then(setMic)}
+            onGrant={() => window.qvoiceSettings.requestMicPermission().then(setMic)}
           />
           <PermissionRow
             icon="⌨️"

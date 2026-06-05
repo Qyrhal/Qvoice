@@ -277,27 +277,35 @@
   color: #30d158;
 }
 
-.perm-badge.denied {
-  background: rgba(255,69,58,0.12);
-  color: #ff453a;
-  font-size: 10.5px;
+.perm-row-granted {
+  border-color: rgba(48,209,88,0.2);
+  background: rgba(48,209,88,0.05);
 }
 
 .perm-btn {
   padding: 6px 14px;
   border-radius: 8px;
-  border: 0.5px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.09);
-  color: rgba(255,255,255,0.85);
+  border: 0.5px solid rgba(255,255,255,0.20);
+  background: rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.90);
   font-size: 12.5px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 
-.perm-btn:hover { background: rgba(255,255,255,0.15); }
+.perm-btn:hover { background: rgba(255,255,255,0.18); }
+
+.perm-btn-denied {
+  border-color: rgba(255,69,58,0.3);
+  background: rgba(255,69,58,0.10);
+  color: #ff6961;
+}
+
+.perm-btn-denied:hover { background: rgba(255,69,58,0.18); }
 
 .perm-hint {
   font-size: 12px;

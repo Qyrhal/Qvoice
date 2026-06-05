@@ -702,14 +702,22 @@ ipcMain.handle('redo-onboarding', () => {
   openOnboardingWindow()
 })
 
-ipcMain.handle('check-permissions', () => {
-  return {
-    accessibility: systemPreferences.isTrustedAccessibilityClient(false),
-  }
+let accessibilityPrompted = false  // only prompt once — macOS ignores subsequent calls
+
+ipcMain.handle('check-permissions', () => ({
+  mic:           systemPreferences.getMediaAccessStatus('microphone'),
+  accessibility: systemPreferences.isTrustedAccessibilityClient(false),
+}))
+
+ipcMain.handle('request-mic-permission', async () => {
+  const result = await systemPreferences.askForMediaAccess('microphone')
+  return result ? 'granted' : 'denied'
 })
 
 ipcMain.on('open-accessibility-settings', () => {
-  // Passing true prompts the user to open System Settings if not already trusted
-  systemPreferences.isTrustedAccessibilityClient(true)
+  if (!accessibilityPrompted) {
+    accessibilityPrompted = true
+    systemPreferences.isTrustedAccessibilityClient(true)  // shows native prompt once
+  }
   shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
 })
