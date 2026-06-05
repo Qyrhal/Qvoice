@@ -702,11 +702,33 @@ ipcMain.handle('redo-onboarding', () => {
   openOnboardingWindow()
 })
 
-let accessibilityPrompted = false  // only prompt once — macOS ignores subsequent calls
+let accessibilityPrompted = false
+let _accCache = null
+let _accCacheAt = 0
+
+// isTrustedAccessibilityClient has signature-caching bugs in dev and some macOS versions.
+// Calling AXIsProcessTrusted() directly via Python ctypes is the ground-truth check.
+function checkAccessibility() {
+  const now = Date.now()
+  if (_accCache !== null && now - _accCacheAt < 3000) return _accCache
+  try {
+    const py = getPython()
+    const r = spawnSync(py, ['-c',
+      'import ctypes; f=ctypes.cdll.LoadLibrary(' +
+      '"/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices"' +
+      '); print(bool(f.AXIsProcessTrusted()))'
+    ], { timeout: 2000, encoding: 'utf8' })
+    _accCache = r.stdout?.trim() === 'True'
+  } catch {
+    _accCache = systemPreferences.isTrustedAccessibilityClient(false)
+  }
+  _accCacheAt = now
+  return _accCache
+}
 
 ipcMain.handle('check-permissions', () => ({
   mic:           systemPreferences.getMediaAccessStatus('microphone'),
-  accessibility: systemPreferences.isTrustedAccessibilityClient(false),
+  accessibility: checkAccessibility(),
 }))
 
 ipcMain.handle('request-mic-permission', async () => {
@@ -715,9 +737,10 @@ ipcMain.handle('request-mic-permission', async () => {
 })
 
 ipcMain.on('open-accessibility-settings', () => {
+  _accCache = null  // bust cache so next poll re-checks
   if (!accessibilityPrompted) {
     accessibilityPrompted = true
-    systemPreferences.isTrustedAccessibilityClient(true)  // shows native prompt once
+    systemPreferences.isTrustedAccessibilityClient(true)
   }
   shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
 })

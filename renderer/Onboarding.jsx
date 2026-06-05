@@ -195,14 +195,24 @@ export function Onboarding() {
           />
         </div>
         {!allPermsGranted && (
-          <div className="perm-hint">Grant both permissions above, then continue.</div>
+          <div className="perm-hint">
+            Grant both permissions above, then continue.
+            {accGranted && !micGranted ? '' : !accGranted && micGranted
+              ? ' Accessibility: toggle it off and back on in System Settings if already added.'
+              : ''}
+          </div>
         )}
       </div>
       <div className="ob-footer">
+        {!allPermsGranted && (
+          <button className="ob-btn-ghost" onClick={() => setStep(0)}>
+            Skip for now
+          </button>
+        )}
         <button
           className="ob-btn-primary"
-          disabled={!allPermsGranted}
-          style={!allPermsGranted ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+          disabled={!micGranted}
+          style={!micGranted ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
           onClick={() => setStep(0)}
         >
           Continue
