@@ -542,6 +542,10 @@ export function Settings() {
 
         <button className={`btn-save ${saved ? 'saved' : ''}`} onClick={save}>{saved ? 'Saved!' : 'Save Settings'}</button>
 
+        <button className="btn-redo-onboarding" onClick={() => window.qvoiceSettings.redoOnboarding()}>
+          Setup wizard
+        </button>
+
       </div>
     </>
   )

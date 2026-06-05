@@ -1,16 +1,29 @@
 const {
   app, BrowserWindow, ipcMain, Tray, Menu,
-  nativeImage, clipboard, screen, globalShortcut
+  nativeImage, clipboard, screen, globalShortcut,
+  systemPreferences, shell
 } = require('electron')
 const path = require('path')
 const { execSync, spawn, spawnSync } = require('child_process')
 const fs = require('fs')
 const os = require('os')
 
-// WebGPU for liquid-dom rendering.
-// HTMLInCanvas is the correct Blink feature name for HTML-in-Canvas (chrome://flags/#canvas-draw-element).
+// WebGPU for liquid-dom glass in the Settings window.
+// HTMLInCanvas was only needed for the <Html> component inside LiquidCanvas — removed.
 app.commandLine.appendSwitch('enable-features', 'WebGPU')
-app.commandLine.appendSwitch('enable-blink-features', 'HTMLInCanvas')
+
+// ─── Memory / performance flags ───────────────────────────────
+// Disable Chromium subsystems Qvoice never uses
+app.commandLine.appendSwitch('disable-features',
+  'TranslateUI,AutofillServerCommunication,MediaRouter,' +
+  'OptimizationHints,CertificateTransparencyComponentUpdater'
+)
+// Cap V8 old-generation heap — overlay + settings are tiny UIs
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=128 --max-semi-space-size=8')
+// Don't run spelling/grammar checks
+app.commandLine.appendSwitch('disable-spell-checking')
+// No crash reporting
+app.commandLine.appendSwitch('disable-breakpad')
 
 const EventEmitter = require('events')
 
@@ -681,4 +694,26 @@ ipcMain.handle('complete-onboarding', (_, selectedSettings) => {
   saveSettingsToDisk(settings)
   restartTranscribeServer()
   onboardingWin?.close()
+})
+
+ipcMain.handle('redo-onboarding', () => {
+  settings.onboardingComplete = false
+  saveSettingsToDisk(settings)
+  openOnboardingWindow()
+})
+
+ipcMain.handle('check-permissions', () => {
+  return {
+    mic: systemPreferences.getMediaAccessStatus('microphone'),
+    accessibility: systemPreferences.isTrustedAccessibilityClient(false),
+  }
+})
+
+ipcMain.handle('request-mic-permission', async () => {
+  return systemPreferences.askForMediaAccess('microphone')
+})
+
+ipcMain.on('open-accessibility-settings', () => {
+  systemPreferences.isTrustedAccessibilityClient(true)
+  shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
 })

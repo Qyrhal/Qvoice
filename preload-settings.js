@@ -10,5 +10,9 @@ contextBridge.exposeInMainWorld('qvoiceSettings', {
     ipcRenderer.on('download-progress', handler)
     return () => ipcRenderer.removeListener('download-progress', handler)
   },
-  completeOnboarding: (s) => ipcRenderer.invoke('complete-onboarding', s),
+  completeOnboarding:        (s) => ipcRenderer.invoke('complete-onboarding', s),
+  redoOnboarding:            ()  => ipcRenderer.invoke('redo-onboarding'),
+  checkPermissions:          ()  => ipcRenderer.invoke('check-permissions'),
+  requestMicPermission:      ()  => ipcRenderer.invoke('request-mic-permission'),
+  openAccessibilitySettings: ()  => ipcRenderer.send('open-accessibility-settings'),
 })

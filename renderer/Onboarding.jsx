@@ -58,16 +58,52 @@ function DownloadBar({ pct }) {
   )
 }
 
+// ─── Permission item ──────────────────────────────────────────────
+function PermissionRow({ icon, label, sub, status, onGrant }) {
+  const granted = status === true || status === 'granted'
+  const denied  = status === 'denied'
+  return (
+    <div className="perm-row">
+      <div className="perm-icon">{icon}</div>
+      <div className="perm-text">
+        <div className="perm-label">{label}</div>
+        <div className="perm-sub">{sub}</div>
+      </div>
+      {granted
+        ? <div className="perm-badge granted">Granted</div>
+        : denied
+          ? <div className="perm-badge denied">Denied — open System Settings</div>
+          : <button className="perm-btn" onClick={onGrant}>Grant</button>
+      }
+    </div>
+  )
+}
+
 // ─── Onboarding ───────────────────────────────────────────────────
 export function Onboarding() {
-  const [step, setStep] = useState(0)      // 0: engine, 1: model, 2: llm, 3: download, 4: done
+  const [step, setStep] = useState(-1)     // -1: permissions, 0: engine, 1: model, 2: confirm, 3: download
+  const [perms, setPerms] = useState({ mic: 'not-determined', accessibility: false })
   const [engine, setEngine] = useState('parakeet')
   const [model, setModel] = useState('mlx-community/parakeet-tdt-0.6b-v3')
   const [llm, setLlm] = useState('LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit')
   const [cachedMap, setCachedMap] = useState({})
-  const [downloads, setDownloads] = useState({})   // { repoKey: { pct, done } }
+  const [downloads, setDownloads] = useState({})
   const [allDone, setAllDone] = useState(false)
   const unsubRef = useRef(null)
+
+  // Poll permissions every 2s so UI updates after user grants in System Settings
+  useEffect(() => {
+    function refresh() {
+      window.qvoiceSettings.checkPermissions().then(setPerms)
+    }
+    refresh()
+    const t = setInterval(refresh, 2000)
+    return () => clearInterval(t)
+  }, [])
+
+  const micGranted = perms.mic === 'granted'
+  const accGranted = perms.accessibility === true
+  const allPermsGranted = micGranted && accGranted
 
   useEffect(() => {
     window.qvoiceSettings.checkModels().then(r => {
@@ -130,6 +166,48 @@ export function Onboarding() {
     Object.keys(selectedSettings).forEach(k => selectedSettings[k] === undefined && delete selectedSettings[k])
     window.qvoiceSettings.completeOnboarding(selectedSettings)
   }
+
+  // ── Step -1: Permissions ────────────────────────────────────────
+  if (step === -1) return (
+    <div className="ob-root">
+      <div className="ob-titlebar" />
+      <div className="ob-body">
+        <div className="ob-heading">Allow access</div>
+        <div className="ob-sub">Qvoice needs two permissions to work. These are never used outside the app.</div>
+        <div className="perm-list">
+          <PermissionRow
+            icon="🎙️"
+            label="Microphone"
+            sub="Required to record your voice"
+            status={perms.mic}
+            onGrant={() => window.qvoiceSettings.requestMicPermission().then(() =>
+              window.qvoiceSettings.checkPermissions().then(setPerms)
+            )}
+          />
+          <PermissionRow
+            icon="⌨️"
+            label="Accessibility"
+            sub="Required for the global hotkey and auto-paste"
+            status={perms.accessibility}
+            onGrant={() => window.qvoiceSettings.openAccessibilitySettings()}
+          />
+        </div>
+        {!allPermsGranted && (
+          <div className="perm-hint">Grant both permissions above, then continue.</div>
+        )}
+      </div>
+      <div className="ob-footer">
+        <button
+          className="ob-btn-primary"
+          disabled={!allPermsGranted}
+          style={!allPermsGranted ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+          onClick={() => setStep(0)}
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+  )
 
   // ── Step 0: Engine ──────────────────────────────────────────────
   if (step === 0) return (

@@ -29,7 +29,11 @@
   "build": {
     "appId": "com.qvoice.app",
     "productName": "Qvoice",
-    "asar": false,
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/uiohook-napi/**",
+      ".venv/**"
+    ],
     "mac": {
       "category": "public.app-category.utilities",
       "target": [{ "target": "dir", "arch": ["arm64"] }]
@@ -39,12 +43,28 @@
       "preload.js",
       "preload-settings.js",
       "transcribe_server.py",
+      "check_models.py",
+      "download_model.py",
       "renderer/dist/**",
       "assets/**",
+      "node_modules/uiohook-napi/**",
       ".venv/**",
       "!.venv/**/__pycache__/**",
       "!.venv/**/*.pyc",
-      "!.venv/**/*.pyo"
+      "!.venv/**/*.pyo",
+      "!.venv/**/*.dist-info/**",
+      "!.venv/**/tests/**",
+      "!.venv/**/test_*.py",
+      "!.venv/**/docs/**",
+      "!.venv/**/doc/**",
+      "!.venv/**/examples/**",
+      "!.venv/**/benchmarks/**",
+      "!.venv/**/*.pyi",
+      "!.venv/**/*.md",
+      "!.venv/**/*.rst",
+      "!.venv/**/*.h",
+      "!.venv/**/*.c",
+      "!.venv/**/Makefile"
     ]
   }
 }
