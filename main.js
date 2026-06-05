@@ -187,7 +187,6 @@ function createTray() {
   if (!icon.isEmpty()) icon.setTemplateImage(true)
 
   tray = new Tray(icon)
-  tray.setTitle('Q')
   tray.setToolTip(`Qvoice — ${hotkeyLabel()}`)
   updateTrayMenu()
 }
