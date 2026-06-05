@@ -101,6 +101,103 @@ function KbdPicker({ value, onChange }) {
   )
 }
 
+// ─── Instruction Blocks (drag-and-drop) ────────────────────────
+function InstructionBlocks({ blocks, onChange }) {
+  const [draggingIdx, setDraggingIdx] = useState(null)
+  const [dragOverIdx, setDragOverIdx] = useState(null)
+  const [expandedId, setExpandedId] = useState(null)
+  const dragHandleRef = useRef(false)
+
+  function move(from, to) {
+    const next = [...blocks]
+    const [item] = next.splice(from, 1)
+    next.splice(to, 0, item)
+    onChange(next)
+  }
+
+  function toggle(id) {
+    const block = blocks.find(b => b.id === id)
+    const next = blocks.map(b => {
+      if (b.type === 'dialect' && block.type === 'dialect') return { ...b, enabled: b.id === id ? !block.enabled : false }
+      return b.id === id ? { ...b, enabled: !b.enabled } : b
+    })
+    onChange(next)
+  }
+
+  function updateInstruction(id, text) {
+    onChange(blocks.map(b => b.id === id ? { ...b, instruction: text } : b))
+  }
+
+  function removeBlock(id) {
+    onChange(blocks.filter(b => b.id !== id))
+  }
+
+  function addCustom() {
+    const id = `custom-${Date.now()}`
+    onChange([...blocks, { id, name: 'Custom instruction', type: 'custom', enabled: true, instruction: '' }])
+    setExpandedId(id)
+  }
+
+  function renameBlock(id, name) {
+    onChange(blocks.map(b => b.id === id ? { ...b, name } : b))
+  }
+
+  return (
+    <div className="ib-list">
+      {blocks.map((block, i) => {
+        const expanded = expandedId === block.id
+        const isDragging = draggingIdx === i
+        const isOver = dragOverIdx === i
+        return (
+          <div
+            key={block.id}
+            draggable
+            onDragStart={e => { setDraggingIdx(i); e.dataTransfer.effectAllowed = 'move' }}
+            onDragOver={e => { e.preventDefault(); setDragOverIdx(i) }}
+            onDrop={e => { e.preventDefault(); if (draggingIdx !== null && draggingIdx !== i) move(draggingIdx, i); setDraggingIdx(null); setDragOverIdx(null) }}
+            onDragEnd={() => { setDraggingIdx(null); setDragOverIdx(null) }}
+            className={`ib-card${isDragging ? ' ib-dragging' : ''}${isOver ? ' ib-over' : ''}`}
+          >
+            <div className="ib-row">
+              <span className="ib-handle" title="Drag to reorder">⠿</span>
+              <Toggle on={block.enabled} onClick={() => toggle(block.id)} />
+              <span className="ib-name">{block.name}</span>
+              <div className="ib-actions">
+                {block.type === 'custom' && (
+                  <button className="ib-btn-icon" onClick={() => removeBlock(block.id)} title="Remove">✕</button>
+                )}
+                <button className="ib-btn-icon ib-chevron" onClick={() => setExpandedId(expanded ? null : block.id)}>
+                  {expanded ? '▲' : '▼'}
+                </button>
+              </div>
+            </div>
+            {expanded && (
+              <div className="ib-expanded">
+                {block.type === 'custom' && (
+                  <input
+                    className="ib-name-input"
+                    value={block.name}
+                    placeholder="Block name…"
+                    onChange={e => renameBlock(block.id, e.target.value)}
+                  />
+                )}
+                <textarea
+                  className="ib-instruction"
+                  value={block.instruction}
+                  placeholder="Instruction sent to the AI model…"
+                  onChange={e => updateInstruction(block.id, e.target.value)}
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+        )
+      })}
+      <button className="ib-add" onClick={addCustom}>+ Add custom instruction</button>
+    </div>
+  )
+}
+
 function SegControl({ value, options, onChange }) {
   return (
     <div className="seg-ctrl">
@@ -287,6 +384,7 @@ export function Settings() {
     hotkeyKey: 'control',
     hotkeyMode: 'double-tap',
     theme: 'default',
+    instructionBlocks: [],
   })
   const [saved, setSaved] = useState(false)
   const [modelStatus, setModelStatus] = useState(null)
@@ -409,8 +507,14 @@ export function Settings() {
           </GlassCard>
         </div>
 
-        {/* System Prompt */}
-        <div className="section"><div className="section-title">System Prompt</div><textarea value={form.systemPrompt} onChange={e => set('systemPrompt', e.target.value)} placeholder="Instructions for the AI correction model…" /></div>
+        {/* Instruction Blocks */}
+        {form.correctionEnabled && (
+          <div className="section">
+            <div className="section-title">Correction Pipeline</div>
+            <div className="note" style={{ marginBottom: 10 }}>Blocks run in order. Drag to reorder. Dialect blocks are mutually exclusive.</div>
+            <InstructionBlocks blocks={form.instructionBlocks} onChange={v => set('instructionBlocks', v)} />
+          </div>
+        )}
 
         {/* Hotkey */}
         <div className="section">

@@ -36,12 +36,34 @@ let uiohookKeydownHandler = null
 let uiohookKeyupHandler = null
 const serverEvents = new EventEmitter()
 
+// ─── Instruction Blocks ───────────────────────────────────────
+const DEFAULT_INSTRUCTION_BLOCKS = [
+  { id: 'course-correction', name: 'Course Correction', type: 'preset', enabled: true,
+    instruction: 'If the speaker self-corrects mid-sentence (e.g. "meet at 2, actually 3 pm"), output only the corrected value ("meet at 3 pm"). Do not include the original erroneous value.' },
+  { id: 'filler-words', name: 'Filler Word Removal', type: 'preset', enabled: true,
+    instruction: 'Remove filler words and sounds: "um", "uh", "like", "you know", "sort of", "kind of", "basically", "literally", "right", "so yeah".' },
+  { id: 'punctuation', name: 'Punctuation & Capitalisation', type: 'preset', enabled: true,
+    instruction: 'Fix punctuation, capitalisation, and sentence boundaries. Use the appropriate punctuation for the tone of the text.' },
+  { id: 'dialect-au', name: '🇦🇺 Australian English', type: 'dialect', enabled: false,
+    instruction: 'Use Australian English spelling and conventions: "colour", "realise", "organisation", "arvo" (afternoon), "servo" (service station). Prefer -ise over -ize endings.' },
+  { id: 'dialect-us', name: '🇺🇸 American English', type: 'dialect', enabled: false,
+    instruction: 'Use American English spelling and conventions: "color", "realize", "organization". Prefer -ize over -ise endings.' },
+  { id: 'dialect-uk', name: '🇬🇧 British English', type: 'dialect', enabled: false,
+    instruction: 'Use British English spelling and conventions: "colour", "realise", "organisation", "whilst", "amongst". Prefer -ise over -ize endings.' },
+]
+
+function buildSystemPrompt(blocks) {
+  const base = 'You are a speech transcription corrector. Return ONLY the corrected text — no explanation, no quotes, no preamble.'
+  const active = (blocks || []).filter(b => b.enabled).map(b => b.instruction.trim()).filter(Boolean)
+  return active.length ? base + '\n\n' + active.join('\n') : base
+}
+
 // ─── Settings ─────────────────────────────────────────────────
 const DEFAULT_SETTINGS = {
   engine: 'parakeet',
   whisperModel: 'base.en',
   llmRepo: 'LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit',
-  systemPrompt: 'You are a speech transcription corrector. Fix grammar, punctuation, and misheard words in the user\'s text. Return ONLY the corrected text — no explanation, no quotes, nothing else.',
+  instructionBlocks: [],
   autoPaste: true,
   symmetricWaveform: false,
   correctionEnabled: true,
@@ -59,9 +81,20 @@ function themeWidth() { return THEME_WIDTHS[settings.theme] || 300 }
 function loadSettings() {
   try {
     const raw = fs.readFileSync(path.join(app.getPath('userData'), 'qvoice-settings.json'), 'utf8')
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+    const saved = JSON.parse(raw)
+    const merged = { ...DEFAULT_SETTINGS, ...saved }
+    // Ensure all default preset blocks exist (add new ones on upgrade)
+    if (!merged.instructionBlocks || merged.instructionBlocks.length === 0) {
+      merged.instructionBlocks = DEFAULT_INSTRUCTION_BLOCKS
+    } else {
+      const ids = new Set(merged.instructionBlocks.map(b => b.id))
+      for (const b of DEFAULT_INSTRUCTION_BLOCKS) {
+        if (!ids.has(b.id)) merged.instructionBlocks.push(b)
+      }
+    }
+    return merged
   } catch {
-    return { ...DEFAULT_SETTINGS }
+    return { ...DEFAULT_SETTINGS, instructionBlocks: DEFAULT_INSTRUCTION_BLOCKS }
   }
 }
 
@@ -263,7 +296,7 @@ function runTranscription(audioPath, onProgress, options = {}) {
       audio_path: audioPath,
       correction: !options.partial && correctionEnabled,
       partial: options.partial || false,
-      system_prompt: settings.systemPrompt || DEFAULT_SETTINGS.systemPrompt,
+      system_prompt: buildSystemPrompt(settings.instructionBlocks),
       beam_size: options.partial ? 1 : (settings.beamSize || DEFAULT_SETTINGS.beamSize),
     }) + '\n')
   })

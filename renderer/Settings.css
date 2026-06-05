@@ -519,3 +519,137 @@ textarea:focus { border-color: rgba(48,209,88,0.4); }
   text-align: center;
   line-height: 1.3;
 }
+
+/* ── Instruction Blocks ──────────────────────────────────────── */
+.ib-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ib-card {
+  border-radius: 10px;
+  border: 0.5px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  overflow: hidden;
+  transition: border-color 0.15s, opacity 0.15s;
+  cursor: grab;
+}
+
+.ib-card:active { cursor: grabbing; }
+.ib-card.ib-dragging { opacity: 0.4; }
+.ib-card.ib-over { border-color: rgba(255,255,255,0.30); background: rgba(255,255,255,0.08); }
+
+.ib-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+}
+
+.ib-handle {
+  font-size: 14px;
+  color: rgba(255,255,255,0.18);
+  cursor: grab;
+  flex-shrink: 0;
+  line-height: 1;
+  user-select: none;
+}
+
+.ib-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.80);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ib-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ib-btn-icon {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.28);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 5px;
+  font-family: inherit;
+  transition: color 0.12s, background 0.12s;
+  line-height: 1;
+}
+
+.ib-btn-icon:hover { color: rgba(255,255,255,0.70); background: rgba(255,255,255,0.07); }
+
+.ib-chevron { font-size: 9px; }
+
+.ib-expanded {
+  padding: 0 12px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border-top: 0.5px solid rgba(255,255,255,0.06);
+  padding-top: 10px;
+}
+
+.ib-name-input {
+  background: rgba(255,255,255,0.06);
+  border: 0.5px solid rgba(255,255,255,0.12);
+  border-radius: 7px;
+  padding: 6px 10px;
+  color: rgba(255,255,255,0.85);
+  font-size: 12.5px;
+  font-family: inherit;
+  font-weight: 500;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.ib-name-input:focus { border-color: rgba(255,255,255,0.28); }
+
+.ib-instruction {
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.10);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: rgba(255,255,255,0.65);
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  width: 100%;
+  min-height: 64px;
+  transition: border-color 0.15s;
+}
+
+.ib-instruction:focus { border-color: rgba(255,255,255,0.22); }
+
+.ib-add {
+  margin-top: 3px;
+  padding: 8px 0;
+  background: none;
+  border: 0.5px dashed rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.35);
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  width: 100%;
+}
+
+.ib-add:hover {
+  border-color: rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.65);
+  background: rgba(255,255,255,0.04);
+}
