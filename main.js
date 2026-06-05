@@ -706,19 +706,19 @@ let accessibilityPrompted = false
 let _accCache = null
 let _accCacheAt = 0
 
-// isTrustedAccessibilityClient has signature-caching bugs in dev and some macOS versions.
-// Calling AXIsProcessTrusted() directly via Python ctypes is the ground-truth check.
+// isTrustedAccessibilityClient has signature-caching bugs in dev/packaged apps.
+// AXIsProcessTrusted() via system Python3 (stdlib ctypes only — no venv needed,
+// no asar path issues) is the ground-truth check.
 function checkAccessibility() {
   const now = Date.now()
   if (_accCache !== null && now - _accCacheAt < 3000) return _accCache
   try {
-    const py = getPython()
-    const r = spawnSync(py, ['-c',
-      'import ctypes; f=ctypes.cdll.LoadLibrary(' +
+    const r = spawnSync('/usr/bin/python3', ['-c',
+      'import ctypes; l=ctypes.cdll.LoadLibrary(' +
       '"/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices"' +
-      '); print(bool(f.AXIsProcessTrusted()))'
+      '); print(bool(l.AXIsProcessTrusted()))'
     ], { timeout: 2000, encoding: 'utf8' })
-    _accCache = r.stdout?.trim() === 'True'
+    _accCache = r.status === 0 && r.stdout?.trim() === 'True'
   } catch {
     _accCache = systemPreferences.isTrustedAccessibilityClient(false)
   }
