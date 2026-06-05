@@ -704,16 +704,12 @@ ipcMain.handle('redo-onboarding', () => {
 
 ipcMain.handle('check-permissions', () => {
   return {
-    mic: systemPreferences.getMediaAccessStatus('microphone'),
     accessibility: systemPreferences.isTrustedAccessibilityClient(false),
   }
 })
 
-ipcMain.handle('request-mic-permission', async () => {
-  return systemPreferences.askForMediaAccess('microphone')
-})
-
 ipcMain.on('open-accessibility-settings', () => {
+  // Passing true prompts the user to open System Settings if not already trusted
   systemPreferences.isTrustedAccessibilityClient(true)
   shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
 })

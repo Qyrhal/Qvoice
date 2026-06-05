@@ -80,9 +80,29 @@ function PermissionRow({ icon, label, sub, status, onGrant }) {
 }
 
 // ─── Onboarding ───────────────────────────────────────────────────
+async function checkMic() {
+  try {
+    const res = await navigator.permissions.query({ name: 'microphone' })
+    return res.state  // 'granted' | 'denied' | 'prompt'
+  } catch {
+    return 'prompt'
+  }
+}
+
+async function requestMic() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    stream.getTracks().forEach(t => t.stop())
+    return 'granted'
+  } catch (err) {
+    return err.name === 'NotAllowedError' ? 'denied' : 'prompt'
+  }
+}
+
 export function Onboarding() {
-  const [step, setStep] = useState(-1)     // -1: permissions, 0: engine, 1: model, 2: confirm, 3: download
-  const [perms, setPerms] = useState({ mic: 'not-determined', accessibility: false })
+  const [step, setStep] = useState(-1)
+  const [mic, setMic] = useState('prompt')        // 'granted' | 'denied' | 'prompt'
+  const [accessibility, setAccessibility] = useState(false)
   const [engine, setEngine] = useState('parakeet')
   const [model, setModel] = useState('mlx-community/parakeet-tdt-0.6b-v3')
   const [llm, setLlm] = useState('LiquidAI/LFM2.5-1.2B-Instruct-MLX-6bit')
@@ -91,18 +111,19 @@ export function Onboarding() {
   const [allDone, setAllDone] = useState(false)
   const unsubRef = useRef(null)
 
-  // Poll permissions every 2s so UI updates after user grants in System Settings
+  // Poll mic + accessibility every 2s
   useEffect(() => {
-    function refresh() {
-      window.qvoiceSettings.checkPermissions().then(setPerms)
+    async function refresh() {
+      setMic(await checkMic())
+      window.qvoiceSettings.checkPermissions().then(r => setAccessibility(r.accessibility))
     }
     refresh()
     const t = setInterval(refresh, 2000)
     return () => clearInterval(t)
   }, [])
 
-  const micGranted = perms.mic === 'granted'
-  const accGranted = perms.accessibility === true
+  const micGranted = mic === 'granted'
+  const accGranted = accessibility === true
   const allPermsGranted = micGranted && accGranted
 
   useEffect(() => {
@@ -179,16 +200,14 @@ export function Onboarding() {
             icon="🎙️"
             label="Microphone"
             sub="Required to record your voice"
-            status={perms.mic}
-            onGrant={() => window.qvoiceSettings.requestMicPermission().then(() =>
-              window.qvoiceSettings.checkPermissions().then(setPerms)
-            )}
+            status={mic}
+            onGrant={() => requestMic().then(setMic)}
           />
           <PermissionRow
             icon="⌨️"
             label="Accessibility"
             sub="Required for the global hotkey and auto-paste"
-            status={perms.accessibility}
+            status={accessibility}
             onGrant={() => window.qvoiceSettings.openAccessibilitySettings()}
           />
         </div>
