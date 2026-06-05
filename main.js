@@ -220,8 +220,15 @@ function updateTrayMenu(state = 'idle') {
 }
 
 // ─── Transcription Server ─────────────────────────────────────
+// spawn() bypasses Electron's ASAR virtual FS — use real filesystem paths.
+function appUnpacked(...parts) {
+  const ap = app.getAppPath()
+  const base = ap.endsWith('.asar') ? ap + '.unpacked' : ap
+  return path.join(base, ...parts)
+}
+
 function getPython() {
-  const venvPy = path.join(__dirname, '.venv', 'bin', 'python')
+  const venvPy = appUnpacked('.venv', 'bin', 'python')
   return fs.existsSync(venvPy) ? venvPy : 'python3'
 }
 
@@ -238,7 +245,7 @@ function restartTranscribeServer() {
 }
 
 function startTranscribeServer() {
-  const script = path.join(__dirname, 'transcribe_server.py')
+  const script = appUnpacked('transcribe_server.py')
   const env = {
     ...process.env,
     QVOICE_ENGINE:         settings.engine        || DEFAULT_SETTINGS.engine,
@@ -591,12 +598,12 @@ function openOnboardingWindow() {
 ipcMain.handle('get-settings', () => ({ ...settings }))
 
 ipcMain.handle('check-models', async () => {
-  const script = path.join(__dirname, 'check_models.py')
+  const script = appUnpacked('check_models.py')
   if (!fs.existsSync(script)) return { ok: false, error: 'check_models.py not found' }
   const python = getPython()
   const env = {
     ...process.env,
-    PYTHONPATH: path.join(__dirname, '.venv', 'lib', 'python3.12', 'site-packages'),
+    PYTHONPATH: appUnpacked('.venv', 'lib', 'python3.12', 'site-packages'),
   }
   return new Promise(resolve => {
     const proc = spawn(python, [script, '--json'], { env, timeout: 120_000 })
@@ -617,7 +624,7 @@ ipcMain.handle('check-models', async () => {
 })
 
 ipcMain.on('download-model', (_, { repo, modelKey }) => {
-  const script = path.join(__dirname, 'download_model.py')
+  const script = appUnpacked('download_model.py')
   if (!fs.existsSync(script)) {
     settingsWin?.webContents.send('download-progress', { repo, type: 'error', error: 'download_model.py not found' })
     return
@@ -625,7 +632,7 @@ ipcMain.on('download-model', (_, { repo, modelKey }) => {
   const python = getPython()
   const env = {
     ...process.env,
-    PYTHONPATH: path.join(__dirname, '.venv', 'lib', 'python3.12', 'site-packages'),
+    PYTHONPATH: appUnpacked('.venv', 'lib', 'python3.12', 'site-packages'),
   }
   const proc = spawn(python, [script, repo, modelKey], { env })
   let buf = ''
@@ -736,9 +743,6 @@ ipcMain.handle('request-mic-permission', async () => {
 
 ipcMain.on('open-accessibility-settings', () => {
   _accCache = null  // bust cache so next poll re-checks
-  if (!accessibilityPrompted) {
-    accessibilityPrompted = true
-    systemPreferences.isTrustedAccessibilityClient(true)
-  }
-  shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
+  // isTrustedAccessibilityClient(true) is unreliable in ad-hoc-signed apps; open directly
+  spawnSync('open', ['x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'])
 })

@@ -7,8 +7,8 @@
     "dev": "vite build --config vite.config.js && electron .",
     "build": "vite build --config vite.config.js",
     "start": "vite build --config vite.config.js && electron .",
-    "dist": "npm run build && electron-builder --mac --dir && npm run repair-venv",
-    "repair-venv": "cp -n \"/Users/avi/.local/share/uv/python/cpython-3.12.0-macos-aarch64-none/lib/libpython3.12.dylib\" \"dist/mac-arm64/Qvoice.app/Contents/Resources/app/.venv/lib/libpython3.12.dylib\" 2>/dev/null; echo \"venv-repaired\"",
+    "dist": "npm run build && electron-builder --mac",
+    "repair-venv": "cp -n \"/Users/midhun/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/libpython3.12.dylib\" \"dist/mac-arm64/Qvoice.app/Contents/Resources/app/.venv/lib/libpython3.12.dylib\" 2>/dev/null; echo \"venv-repaired\"",
     "check-models": ".venv/bin/python check_models.py",
     "setup": "bash setup.sh"
   },
@@ -32,12 +32,18 @@
     "asar": true,
     "asarUnpack": [
       "node_modules/uiohook-napi/**",
-      ".venv/**"
+      ".venv/**",
+      "transcribe_server.py",
+      "check_models.py",
+      "download_model.py"
     ],
     "icon": "assets/icon.icns",
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "assets/icon.icns",
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "hardenedRuntime": true,
       "target": [{ "target": "dmg", "arch": ["arm64"] }]
     },
     "dmg": {
@@ -69,7 +75,6 @@
       "!.venv/**/doc/**",
       "!.venv/**/examples/**",
       "!.venv/**/benchmarks/**",
-      "!.venv/**/*.pyi",
       "!.venv/**/*.md",
       "!.venv/**/*.rst",
       "!.venv/**/*.h",
