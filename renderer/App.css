@@ -253,15 +253,16 @@
 
 /* ── Streaming word blur-reveal ─────────────────────────────── */
 @keyframes swWordReveal {
-  0%   { filter: blur(8px); opacity: 0.25; }
-  100% { filter: blur(0px); opacity: 1; }
+  0%   { filter: blur(12px); opacity: 0; }
+  22%  { filter: blur(10px); opacity: 1; }
+  100% { filter: blur(0px);  opacity: 1; }
 }
 
 .sw-word-settled { display: inline; }
 
 .sw-word-new {
   display: inline;
-  animation: swWordReveal 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: swWordReveal 0.9s ease forwards;
 }
 
 /* ── Inline cursor bars ──────────────────────────────────────── */

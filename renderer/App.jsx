@@ -307,7 +307,7 @@ function StreamingText({ text, analyser }) {
           <span
             key={i}
             className={isNew ? 'sw-word-new' : 'sw-word-settled'}
-            style={isNew ? { animationDelay: `${(i - settledCount) * 0.05}s` } : undefined}
+            style={isNew ? { animationDelay: `${(i - settledCount) * 0.07}s` } : undefined}
           >
             {word}{' '}
           </span>
