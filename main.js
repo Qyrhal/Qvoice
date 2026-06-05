@@ -623,10 +623,13 @@ ipcMain.handle('check-models', async () => {
   })
 })
 
-ipcMain.on('download-model', (_, { repo, modelKey }) => {
+ipcMain.on('download-model', (event, { repo, modelKey }) => {
+  const sender = event.sender
+  const send = (msg) => { if (!sender.isDestroyed()) sender.send('download-progress', msg) }
+
   const script = appUnpacked('download_model.py')
   if (!fs.existsSync(script)) {
-    settingsWin?.webContents.send('download-progress', { repo, type: 'error', error: 'download_model.py not found' })
+    send({ repo, type: 'error', error: 'download_model.py not found' })
     return
   }
   const python = getPython()
@@ -647,17 +650,17 @@ ipcMain.on('download-model', (_, { repo, modelKey }) => {
       try {
         const msg = JSON.parse(line)
         if (msg.type === 'done' || msg.type === 'error') finished = true
-        settingsWin?.webContents.send('download-progress', { repo, ...msg })
+        send({ repo, ...msg })
       } catch {}
     }
   })
 
   proc.on('close', () => {
-    if (!finished) settingsWin?.webContents.send('download-progress', { repo, type: 'done' })
+    if (!finished) send({ repo, type: 'done' })
   })
 
   proc.on('error', e => {
-    settingsWin?.webContents.send('download-progress', { repo, type: 'error', error: e.message })
+    send({ repo, type: 'error', error: e.message })
   })
 })
 
