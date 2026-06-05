@@ -22,13 +22,16 @@ DEFAULT_SYSTEM_PROMPT = (
     "Return ONLY the corrected text — no explanation, no quotes, nothing else."
 )
 
+MIN_AUDIO_SAMPLES = 1600  # 0.1 s at 16 kHz — below this, return silence
+
 def load_wav_direct(path, target_sr):
     """Read a 16-bit PCM WAV without ffmpeg. Resamples if sample rate differs."""
     with wave.open(str(path), 'rb') as wf:
         channels  = wf.getnchannels()
         sampwidth = wf.getsampwidth()
         rate      = wf.getframerate()
-        frames    = wf.readframes(wf.getnframes())
+        n_frames  = wf.getnframes()
+        frames    = wf.readframes(n_frames)
 
     if sampwidth != 2:
         raise ValueError(f"Unsupported WAV sample width: {sampwidth} bytes")
@@ -37,6 +40,9 @@ def load_wav_direct(path, target_sr):
 
     if channels > 1:
         audio = audio.reshape(-1, channels).mean(axis=1)
+
+    if len(audio) < MIN_AUDIO_SAMPLES:
+        raise ValueError(f"Audio too short: {len(audio)} samples (min {MIN_AUDIO_SAMPLES})")
 
     if rate != target_sr:
         import librosa
@@ -103,7 +109,12 @@ for line in sys.stdin:
 
         # ── Parakeet engine ───────────────────────────────────
         if ENGINE == "parakeet":
-            text = parakeet_transcribe(audio_path)
+            try:
+                text = parakeet_transcribe(audio_path)
+            except ValueError as e:
+                # Too short / empty audio — not a crash, just return empty
+                print(json.dumps({"status": "ok", "text": ""}), flush=True)
+                continue
             if req.get("partial"):
                 print(json.dumps({"status": "ok", "text": text}), flush=True)
             else:
@@ -115,6 +126,13 @@ for line in sys.stdin:
         # ── Whisper engine ────────────────────────────────────
         system_prompt = req.get("system_prompt") or DEFAULT_SYSTEM_PROMPT
         beam_size = int(req.get("beam_size", 5))
+
+        # Guard: reject audio that is too short to transcribe
+        try:
+            load_wav_direct(audio_path, 16000)
+        except ValueError:
+            print(json.dumps({"status": "ok", "text": ""}), flush=True)
+            continue
 
         # Partial mode: fast Whisper only, no LLM (used for live preview during recording)
         if req.get("partial"):

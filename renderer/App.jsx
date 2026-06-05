@@ -524,6 +524,12 @@ export function App() {
         return;
       }
 
+      // WAV header is 44 bytes; 1600 samples × 2 bytes = 3200 bytes minimum (0.1 s at 16 kHz)
+      if (!wavBuf || wavBuf.byteLength < 44 + 3200) {
+        hidePanel();
+        return;
+      }
+
       let result;
       try {
         result = await qv.transcribeAudio(wavBuf);
