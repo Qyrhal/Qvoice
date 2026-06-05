@@ -262,7 +262,7 @@
 
 .sw-word-new {
   display: inline;
-  animation: swWordReveal 0.9s ease forwards;
+  animation: swWordReveal 0.7s ease forwards;
 }
 
 /* ── Inline cursor bars ──────────────────────────────────────── */
